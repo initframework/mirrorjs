@@ -10,22 +10,21 @@
 
 let mirror = {
 
-   // initiate the framework
-   init: function() {
+   // setup the mirror for reflecting changes
+   setup: function() {
 
-      // convert the variables
-      
-      // read the document body as text
+      // read the document body as text array
       const bodyTxt = this.__readfileAsText()
       console.log(bodyTxt);
 
-
-      const bodyObj = this.__readfileAsNode();
-      console.log(bodyObj);
-
-
       // parse the document
+      // and extract variables, directives and expressions
+      const parsedDoc = parser.__parse(bodyTxt);
+      console.log(parsedDoc);
 
+      // read the documentbody as node object
+      // const bodyObj = this.__readfileAsNode();
+      // console.log(bodyObj);
 
    },
 
@@ -63,34 +62,102 @@ let mirror = {
 
 let variable = {
 
-   __set: function(documentArr) {
-      
+   __set: function(name, value) {
+      window[name] = value;
+   },
+
+}
+
+let parser = {
+
+   __parse: function(documentArr) {
+
+      let parsedDoc = [], count = 0;
+
       if (typeof documentArr == "object") {
-         let documentVar = [], count = 0
+         
+         let var_expecting = false; //, cond_expecting = [false], loop_expecting = [false];
          documentArr.forEach(line => {
             // break each sentence in the line into words
-            let sentences = line.split("/[ ]/");
-            if (sentences[0] == "@var") {
+            let sentences = line.split(" ");
+
+            // if no multiple var tag is open
+            // search for variables
+            if ( var_expecting == false && sentences[0] == "@var" ) {
+               // this is a singular variable
+               // merge the remaining arrays
+               let _variables = sentences.slice(1, sentences.length);
+               // merge the variable into a string
+               _variables = _variables.join("");
+               // accept multiple variables on one line
+               // NOTE: EVERY VARIABLE MUST END WITH SEMICOLON
+               _variables = _variables.trim().substring(0, _variables.trim().length - 1).split(";");
+               // hence, last element of array is discarded i.e after the last declared variable
+               // loop through all
+               _variables.forEach(_variable => {
+                  
+                  // break the string on equal to (=)
+                  _variable = _variable.split("=");
+                  // get the variable name
+                  let _variableName = _variable[0]; // is this sa valid variable name
+                  // replace any semi-colon, quote and double-quote
+                  let _variableValue = _variable[1].replace(/[";']/gi, ""); // this could be another variable or an array or an object
+                  // parsedDoc[count] = `<mirror type="var" data-${_variableName}=${_variableValue} />`
+                  // set the variable as an mjs variable
+                  variable.__set(_variableName,_variableValue);
+
+               });
+               
+               
+            }
+
+            // open vars
+            else if ( var_expecting == false && sentences[0] == "@vars" ) {
+               // @vars cannot be inside @vars
+               var_expecting = true;
+               // i'd be expecting another variable
+               // hence you can't enter anything not a variable here
+            }
+
+            // else if (var_expecting == true) {
+            //    // get the variable
+            //    // break the string on equal to (=)
+            //    _variable = _variable.split("=");
+            //    // get the variable name
+            //    let _variableName = _variable[0]; // is this sa valid variable name
+            //    // replace any semi-colon, quote and double-quote
+            //    let _variableValue = _variable[1].replace(/[";']/gi, ""); // this could be another variable or an array or an object
+            //    // parsedDoc[count] = `<mirror type="var" data-${_variableName}=${_variableValue} />`
+            //    // set the variable as an mjs variable
+            //    variable.__set(_variableName,_variableValue);
+            // }
+
+            // close vars
+            else if (sentences[0] == "@@vars") {
+               var_expecting[var_expecting.length - 1] == false;
+            }
+
+            // open cond
+            else if (sentences[0] == "@vars") {
 
             }
+
+            // close cond
+            else if (sentences[0] == "@vars") {
+
+            }
+
+            else {
+               parsedDoc[count] = line;
+            }
+
+            count++;
          });
       }
 
-   },
+      return parsedDoc;
 
-   // function to set all variables coming from the server, loaded in the vars element
-   __get: function() {
-      // get the dataset in the vars element
-      var data = document.getElementsByTagName("vars")[0].dataset;
-      // convert them all to objects
-      data = Object.assign({}, data)
-      // set them to global variables
-      for (const vars in data) {
-         if (data.hasOwnProperty(vars)) {
-            window['_' + vars] = data[vars];
-         }
-      }
-   },
+   }
 
 }
 
@@ -103,12 +170,6 @@ let watcher = {
 }
 
 let evaluator = {
-
-}
-
-let parser = {
-
-
 
 }
 

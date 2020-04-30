@@ -1,7 +1,7 @@
 
 window.onload = function () {
    
-   // start mirror js
-   mirror.init()
+   // setup mirror js
+   mirror.setup()
 
 }

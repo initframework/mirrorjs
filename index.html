@@ -16,20 +16,24 @@
 </head>
 <body id="body" class="bg-secondary">
    
-   @var phone = "samsung";
+   @var $phone = samsung; $model = $phone;
 
    @vars
-      name = "Ebuka";
-      age = 22;
+      $name = "Ebuka";
+      $age = 22;
    @@vars
 
-   @cond (user.role == admin)
+   @cond ($user.role == "admin")
       <a class="display-4 text-light" href="foo">Next</a>
    @@cond
 
-   @loop (user.role == admin)
+   @loop ($user.role == "admin")
       <a class="display-4 text-light" href="foo">Next</a>
    @@loop
+
+   <div>
+      <h1>Boy</h1>
+   </div>
 
 </body>
 </html>
