@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Document</title>
+
+   <!-- Vendor -->
+   <link rel="stylesheet" href="assets/bootstrap.css">
+   <script src="assets/jquery.min.js"></script>
+   <!-- Mirror JS -->
+   <script src="assets/mirror.js"></script>
+   <!-- Main -->
+   <script src="assets/main.js"></script>
+
+</head>
+<body id="body" class="bg-secondary">
+   
+   @var phone = "samsung";
+
+   @vars
+      name = "Ebuka";
+      age = 22;
+   @@vars
+
+   @cond (user.role == admin)
+      <a class="display-4 text-light" href="foo">Next</a>
+   @@cond
+
+   @loop (user.role == admin)
+      <a class="display-4 text-light" href="foo">Next</a>
+   @@loop
+
+</body>
+</html>
