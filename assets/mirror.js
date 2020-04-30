@@ -22,7 +22,11 @@ let mirror = {
       const parsedDoc = parser.__parse(bodyTxt);
       // console.log(parsedDoc);
 
+      // the document body can now replace the original body
+      document.getElementById("body").innerHTML = parsedDoc;
+
       // by now, all variables have been registered as a cause to an effect
+      // time to find all watchers on these variables
 
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
@@ -32,7 +36,8 @@ let mirror = {
 
 }
 
-let variable_watcher = {};
+let _variable_watcher = {};
+let _watcher = {};
 
 let variable = {
 
@@ -47,9 +52,17 @@ let variable = {
    },
 
    __register: function(name) {
-      variable_watcher[name] = []
-      console.log(variable_watcher);
+      _variable_watcher[name] = []
+      // console.log(_variable_watcher);
    },
+
+}
+
+let watcher = {
+
+   __register: function(action) {
+      _watcher[generator.__hash()] = action;
+   }
 
 }
 
@@ -144,6 +157,9 @@ let parser = {
                // strip out the conditional brackets
                _conds = _conds.replace(/[)(]/gi, "");
                // console.log(_conds);
+
+               // register as a watcher
+               watcher.__register(_conds);
             }
 
             // close cond
@@ -153,12 +169,17 @@ let parser = {
 
             // read any other html
             else {
+
+               // now check for expressions in each line
+
+               // add to parsed body document
                parsedDoc[count] = line;
+               
+               // count would only be used for HTML related outputs
+               // such as returning the innerHTML of a mirror tag
+               count++;
             }
 
-            // count would only be used for HTML related outputs
-            // such as returning the innerHTML of a mirror tag
-            count++;
          });
       }
 
@@ -206,7 +227,16 @@ let evaluator = {
 
 }
 
-let generators = {
+let generator = {
+
+   __hash: function() {
+      let hex = "0123456789abcdef", hash = "";
+      for (let max = 8; max > 0; max--) {
+         let i =  Math.ceil(Math.random() * 16) - 1;
+         hash += hex.charAt(i)
+      }
+      return hash;
+   }
 
 }
 

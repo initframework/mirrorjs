@@ -17,6 +17,7 @@
 <body id="body" class="bg-secondary">
    
    @var $phone = 'samsung'; $model = A10; $company = "Apple";
+   @var $phone = "Apple";
 
    @vars
       $name = "Ebuka";
@@ -27,8 +28,8 @@
       <a class="display-4 text-light" href="foo">Next</a>
    @@cond
 
-   @for ($user.role == "admin")
-      <a class="display-4 text-light" href="foo">Next</a>
+   @loop ($name in $names)
+      <p>{{$name}}</p>
    @@loop
 
    @loop
