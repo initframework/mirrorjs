@@ -16,19 +16,27 @@
 </head>
 <body id="body" class="bg-secondary">
    
-   @var $phone = 'samsung'; $model = A10; $company = 'SAMSUNG';
+   @var $phone = 'samsung'; $model = A10; $company = "Apple";
 
    @vars
       $name = "Ebuka";
       $age = 22;
    @@vars
 
-   @cond ($user.role == "admin")
+   @cond ($name == "Ebuka")
       <a class="display-4 text-light" href="foo">Next</a>
    @@cond
 
-   @loop ($user.role == "admin")
+   @for ($user.role == "admin")
       <a class="display-4 text-light" href="foo">Next</a>
+   @@loop
+
+   @loop
+      @var $count = 10;
+
+      <p>Number {{$count}}</p>
+
+      @expr $count--;
    @@loop
 
    <div>

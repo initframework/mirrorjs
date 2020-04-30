@@ -14,51 +14,25 @@ let mirror = {
    setup: function() {
 
       // read the document body as text array
-      const bodyTxt = this.__readfileAsText()
-      console.log(bodyTxt);
+      const bodyTxt = parser.__readfileAsText()
+      // console.log(bodyTxt);
 
       // parse the document
       // and extract variables, directives and expressions
       const parsedDoc = parser.__parse(bodyTxt);
-      console.log(parsedDoc);
+      // console.log(parsedDoc);
+
+      // by now, all variables have been registered as a cause to an effect
 
       // read the documentbody as node object
-      // const bodyObj = this.__readfileAsNode();
+      // const bodyObj = parser.__readfileAsNode();
       // console.log(bodyObj);
 
    },
 
-   __readfileAsText: function() {
-      // These provide a tree of all elements
-      const body = document.getElementById("body");
-      // the document nodes as a NodeList
-      let elements = body.innerHTML;
-      // separate into line
-      elements = elements.split("\n");
-      // remove empty lines
-      let documentArr = [], count = 0;
-      elements.forEach(line => {
-         if (line.trim().length != 0) {
-            documentArr[count] = line.trim();
-            count++;
-         }
-      });
-      
-      return documentArr;
-   },
-
-   __readfileAsNode: function() {
-      // These provide a tree of all elements
-      const body = document.getElementById("body");
-      // the document nodes as a NodeList
-      let elements = body.childNodes;
-      // the document nodes as an Object
-      documentObj = Object.assign({}, elements);
-      
-      return documentObj;
-   },
-
 }
+
+let variable_watcher = {};
 
 let variable = {
 
@@ -68,13 +42,23 @@ let variable = {
       // NOTE: the value of the variable could be an array
       
       // should this be considered when getting it
-      window[name] = value;
+      window[name] = value == "" ? null : value ;
+      this.__register(name)
+   },
+
+   __register: function(name) {
+      variable_watcher[name] = []
+      console.log(variable_watcher);
    },
 
 }
 
 let parser = {
 
+   // parse the document
+   // retrieve variables
+   // identify expressions
+   // identify watchers
    __parse: function(documentArr) {
 
       let parsedDoc = [], count = 0;
@@ -115,7 +99,6 @@ let parser = {
 
             // open vars
             else if ( var_expecting == false && sentences[0] == "@vars" ) {
-               console.log("Enter 1");
                // @vars cannot be inside @vars
                var_expecting = true;
                // i'd be expecting another variable
@@ -124,13 +107,11 @@ let parser = {
             
             // close vars
             else if ( var_expecting == true && sentences[0] == "@@vars") {
-               console.log("Enter 1");
                var_expecting = false;
             }
 
             // multi line variables
             else if (var_expecting == true) {
-               console.log("Enter 2 " + line);
                // break each sentence in the line into words
                let _variables = line;
                // get the variable
@@ -154,8 +135,15 @@ let parser = {
             }
 
             // open cond
+            // NOTE: EVERY conditional stmt could be a watcher on a variable
             else if (sentences[0] == "@cond") {
-
+               // merge the remaining arrays
+               let _conds = sentences.slice(1, sentences.length);
+               // merge the variable into a string
+               _conds = _conds.join("");
+               // strip out the conditional brackets
+               _conds = _conds.replace(/[)(]/gi, "");
+               // console.log(_conds);
             }
 
             // close cond
@@ -163,6 +151,7 @@ let parser = {
 
             }
 
+            // read any other html
             else {
                parsedDoc[count] = line;
             }
@@ -175,15 +164,41 @@ let parser = {
 
       return parsedDoc;
 
-   }
+   },
+
+   __readfileAsText: function() {
+      // These provide a tree of all elements
+      const body = document.getElementById("body");
+      // the document nodes as a NodeList
+      let elements = body.innerHTML;
+      // separate into line
+      elements = elements.split("\n");
+      // remove empty lines
+      let documentArr = [], count = 0;
+      elements.forEach(line => {
+         if (line.trim().length != 0) {
+            documentArr[count] = line.trim();
+            count++;
+         }
+      });
+      
+      return documentArr;
+   },
+
+   __readfileAsNode: function() {
+      // These provide a tree of all elements
+      const body = document.getElementById("body");
+      // the document nodes as a NodeList
+      let elements = body.childNodes;
+      // the document nodes as an Object
+      documentObj = Object.assign({}, elements);
+      
+      return documentObj;
+   },
 
 }
 
 let renderer = {
-
-}
-
-let watcher = {
 
 }
 
