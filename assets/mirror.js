@@ -23,7 +23,7 @@ let mirror = {
       // console.log(parsedDoc);
 
       // the document body can now replace the original body
-      document.getElementById("body").innerHTML = parsedDoc;
+      document.getElementById("body").innerHTML = parsedDoc.join("\n");
       console.log(parsedDoc);
 
       // by now, all variables have been registered as a cause to an effect
@@ -156,7 +156,7 @@ let parser = {
 
             // open cond
             // NOTE: EVERY conditional stmt could be a watcher on a variable
-            else if (sentences[0] == "@cond") {
+            else if (sentences[0] == "@if") {
                // merge the remaining arrays
                let _conds = sentences.slice(1, sentences.length);
                // merge the variable into a string
@@ -164,15 +164,31 @@ let parser = {
                // strip out the conditional brackets
                // _conds = _conds.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
-               const type = "cond", index = generator.__hash(), action = `use strict; return ${_conds};` ;
+               const type = "cond", index = generator.__hash(), action = `return ${_conds};` ;
                // register condition as a watcher
                watcher.__register(index,type,action);
                // make html
                parsedDoc.push(`<mirror id="${index}">`);
             }
 
-            // close cond
-            else if (sentences[0] == "@@cond") {
+            // open loops
+            else if (sentences[0] == "@for") {
+               // merge the remaining arrays
+               let _expr = sentences.slice(1, sentences.length);
+               // merge the variable into a string
+               _expr = _expr.join("").trim();
+               // strip out the conditional brackets
+               // _expr = _expr.replace(/[)(]/gi, ""); // ***
+               // set watcher attributes
+               const type = "loop", index = generator.__hash(), action = `return ${_expr};` ;
+               // register condition as a watcher
+               watcher.__register(index,type,action);
+               // make html
+               parsedDoc.push(`<mirror id="${index}">`);
+            }
+
+            // close cond and loop
+            else if (sentences[0] == "@end") {
                // do nothing for now
                parsedDoc.push(`</mirror>`);
             }
@@ -180,7 +196,23 @@ let parser = {
             // read any other html
             else {
 
-               // now check for expressions in each line
+               // read expressions in each line
+               let regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
+               let expr = null;
+               // match continuosly
+               while (match = regex.exec(line))
+               {
+                  // get the expression
+                  _expr = match[0];
+                  // register expression as a watcher
+                  // set watcher attributes
+                  const type = "expr", index = generator.__hash(), action = _expr ;
+                  // register condition as a watcher
+                  watcher.__register(index,type,action);
+                  // replace match with index
+                  line = line.replace(_expr, `{{${index}}}`)
+                  
+               }
 
                // add to parsed body document
                parsedDoc.push(line);
@@ -234,6 +266,10 @@ let renderer = {
 }
 
 let evaluator = {
+
+   __execute: function(action) {
+      Function('"use strict";' + action)();
+   }
 
 }
 

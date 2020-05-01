@@ -24,21 +24,18 @@
       $age = 22;
    @@vars
 
-   @cond ($name == "Ebuka")
+   @if ($name == "Ebuka")
       <a class="display-4 text-light" href="foo">Next</a>
-   @@cond
+   @end
 
-   @loop ($name in $names)
-      <p>{{$name}}</p>
-   @@loop
+   <!-- objects and associative arrays -->
+   @for ($property in $object)
+      <p>{{$properti}} : {{object.property}}</p>
+   @end
 
-   @loop
-      @var $count = 10;
-
-      <p>Number {{$count}}</p>
-
-      @expr $count--;
-   @@loop
+   @for ($element of $array)
+      <p>{{$element}}</p>
+   @end
 
    <div>
       <h1>Boy</h1>
