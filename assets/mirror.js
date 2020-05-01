@@ -24,8 +24,11 @@ let mirror = {
 
       // the document body can now replace the original body
       document.getElementById("body").innerHTML = parsedDoc;
+      console.log(parsedDoc);
 
       // by now, all variables have been registered as a cause to an effect
+      // and watchers too must have been registered
+
       // time to find all watchers on these variables
 
       // read the documentbody as node object
@@ -60,8 +63,12 @@ let variable = {
 
 let watcher = {
 
-   __register: function(action) {
-      _watcher[generator.__hash()] = action;
+   __register: function(index,type,action) {
+      _watcher[index] = {
+         index: index,
+         type: type,
+         action: action
+      };
    }
 
 }
@@ -153,18 +160,21 @@ let parser = {
                // merge the remaining arrays
                let _conds = sentences.slice(1, sentences.length);
                // merge the variable into a string
-               _conds = _conds.join("");
+               _conds = _conds.join("").trim();
                // strip out the conditional brackets
-               _conds = _conds.replace(/[)(]/gi, "");
-               // console.log(_conds);
-
-               // register as a watcher
-               watcher.__register(_conds);
+               // _conds = _conds.replace(/[)(]/gi, ""); // ***
+               // set watcher attributes
+               const type = "cond", index = generator.__hash(), action = `use strict; return ${_conds};` ;
+               // register condition as a watcher
+               watcher.__register(index,type,action);
+               // make html
+               parsedDoc.push(`<mirror id="${index}">`);
             }
 
             // close cond
             else if (sentences[0] == "@@cond") {
-
+               // do nothing for now
+               parsedDoc.push(`</mirror>`);
             }
 
             // read any other html
@@ -173,7 +183,7 @@ let parser = {
                // now check for expressions in each line
 
                // add to parsed body document
-               parsedDoc[count] = line;
+               parsedDoc.push(line);
                
                // count would only be used for HTML related outputs
                // such as returning the innerHTML of a mirror tag
