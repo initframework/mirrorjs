@@ -30,6 +30,12 @@ let mirror = {
       // so now let's find all watchers on these variables and map them to their variables
       variable.__addWatchersToVariables();
 
+      // now we register the contents of those watchers that are of cond or loop directives
+      watcher.__registerContents();
+
+      // now lets run the first render
+      // renderer.
+
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
       // console.log(bodyObj);
@@ -104,9 +110,24 @@ let watcher = {
       _watcher[index] = {
          index: index,
          type: type,
-         action: action
+         action: action,
+         content: null
       };
-   }
+   },
+
+   __registerContents: function() {
+      // for each registered watcher
+      for (const property in _watcher) {
+         if (_watcher.hasOwnProperty(property)) {
+            const watcher = _watcher[property];
+            // register its content if its type is a cond or a loop
+            if (watcher.type == "cond" || watcher.type == "loop") {
+               watcher.content = document.getElementById(watcher.index).innerHTML
+            }
+         }
+      }
+   },
+
 
 }
 
@@ -267,10 +288,6 @@ let parser = {
 
       return parsedDoc;
 
-   },
-
-   __getContents: function() {
-      
    },
 
    __readfileAsText: function() {
