@@ -20,13 +20,14 @@
    @var $phone = "Apple";
    @var $phones = ['Apple', 'Samsung', 'Tecno', 'Huawei'];
    @var $company = {name: 'Apple', country: 'USA', employees: 50000, founders: 'Steve Job & Steve Wozniak'}
+   @var $con$tant = $company;
 
    @vars
       $name = "Ebuka";
       $age = 22;
    @@vars
 
-   @if ($name == "Ebuka")
+   @if ($con$tant == $company)
       <a class="display-4 text-light" href="foo">Next</a>
    @end
 

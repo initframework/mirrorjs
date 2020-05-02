@@ -26,10 +26,9 @@ let mirror = {
       document.getElementById("body").innerHTML = parsedDoc.join("\n");
       console.log(parsedDoc);
 
-      // by now, all variables have been registered as a cause to an effect
-      // and watchers too must have been registered
-
-      // time to find all watchers on these variables
+      // by now, all variables have been registered as a cause to an effect and watchers too must have been registered
+      // so now let's find all watchers on these variables and map them to their variables
+      variable.__addWatchersToVariables();
 
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
@@ -41,6 +40,7 @@ let mirror = {
 
 let _variable_watcher = {};
 let _watcher = {};
+let _variable = [];
 
 let variable = {
 
@@ -49,14 +49,51 @@ let variable = {
       // NOTE: the value of the variable could be an object
       // NOTE: the value of the variable could be an array
       
-      // should this be considered when getting it
-      window[name] = value == "" ? null : value ;
-      this.__register(name)
+      // null the value if the value is empty
+      let _value = value == "" ? null : value ;
+      // find out if the variable has been registered before
+      if (!_variable.includes(name)) {
+         // make the variable globally avilable
+         window[name] = _value;
+         this.__register(name);
+      } else {
+         // update its value
+         window[name] = _value
+      }
    },
 
    __register: function(name) {
-      _variable_watcher[name] = []
-      // console.log(_variable_watcher);
+      // find out if the variable has been registered before
+      if (!_variable.includes(name)) {
+         // register the variable
+         _variable.push(name);
+         // register the variable to match a watcher
+         _variable_watcher[name] = [];
+      }
+   },
+
+   __addWatchersToVariables: function() {
+      // for every registered watcher
+      // TODO: optimize this process later with memoization
+      for (const property in _watcher) {
+         if (_watcher.hasOwnProperty(property)) {
+            // the watcher
+            const watcher = _watcher[property];
+            // hold its properties
+            const index = watcher.index, action = watcher.action;
+            // now iterate over every registered variable
+            _variable.forEach(variable => {
+               // using regex
+               let pattern = variable.replace(/[$]/g,"[$]")+"(?![a-zA-Z0-9_])";
+               let regex = new RegExp(pattern);
+               // find out if the variable is referenced in the action of the watcher
+               if (regex.test(action)) {
+                  // add the index of the watcher to the variable watcher
+                  _variable_watcher[variable].push(index);
+               }
+            });
+         }
+      }
    },
 
 }
