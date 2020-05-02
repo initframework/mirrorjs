@@ -24,7 +24,7 @@ let mirror = {
 
       // the document body can now replace the original body
       document.getElementById("body").innerHTML = parsedDoc.join("\n");
-      console.log(parsedDoc);
+      // console.log(parsedDoc);
 
       // by now, all variables have been registered as a cause to an effect and watchers too must have been registered
       // so now let's find all watchers on these variables and map them to their variables
@@ -34,7 +34,8 @@ let mirror = {
       watcher.__registerContents();
 
       // now lets run the first render
-      // renderer.
+      // let's start with expressions
+      renderer.__expressions(parsedDoc.join(""))
 
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
@@ -268,7 +269,7 @@ let parser = {
                   _expr = _expr.replace(/([{]{2}|[}]{2})/gi, "");
                   // register expression as a watcher
                   // set watcher attributes
-                  const type = "expr", index = generator.__hash(), action = _expr ;
+                  const type = "expr", index = generator.__hash(), action = `return ${_expr}` ;
                   // register condition as a watcher
                   watcher.__register(index,type,action);
                   // replace match with index
@@ -324,12 +325,28 @@ let parser = {
 
 let renderer = {
 
+   __expressions: function(body) {
+      // for each watcher
+      for (const property in _watcher) {
+         if (_watcher.hasOwnProperty(property)) {
+            const watcher = _watcher[property];
+            if (watcher.type == "expr") {
+               console.log(watcher.action);
+               let result = evaluator.__execute(watcher.action);
+               console.log(result);
+               body = body.replace("{{" + watcher.index + "}}", result);
+               document.getElementById("body").innerHTML = body;
+            }
+         }
+      }
+   }
+
 }
 
 let evaluator = {
 
    __execute: function(action) {
-      Function('"use strict";' + action)();
+      return Function('"use strict";' + action + ' ?? null;')();
    }
 
 }

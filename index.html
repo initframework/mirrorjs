@@ -24,16 +24,17 @@
 
    @vars
       $name = "Ebuka";
-      $age = 22;
+      $age = 12;
    @@vars
 
    @if ($con$tant == $company)
-      <a class="display-4 text-light" href="foo">Next</a>
+      <a class="{{ $age > 18 ? 'text-danger' : 'text-success' }} display-4" href="foo">Next</a>
    @end
 
    <!-- objects and associative arrays -->
+   @var field = 'name';
    @for (field in $company)
-      <p>{{field}} : {{$company.field}}</p>
+      <p>{{field}} : {{$company[field]}}</p>
    @end
 
    <!-- arrays -->
