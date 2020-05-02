@@ -18,6 +18,8 @@
    
    @var $phone = 'samsung'; $model = A10; $company = "Apple";
    @var $phone = "Apple";
+   @var $phones = ['Apple', 'Samsung', 'Tecno', 'Huawei'];
+   @var $company = {name: 'Apple', country: 'USA', employees: 50000, founders: 'Steve Job & Steve Wozniak'}
 
    @vars
       $name = "Ebuka";
@@ -29,12 +31,13 @@
    @end
 
    <!-- objects and associative arrays -->
-   @for ($property in $object)
-      <p>{{$properti}} : {{object.property}}</p>
+   @for (field in $company)
+      <p>{{field}} : {{$company.field}}</p>
    @end
 
-   @for ($element of $array)
-      <p>{{$element}}</p>
+   <!-- arrays -->
+   @for (phone of $phones)
+      <p>{{phone}}</p>
    @end
 
    <div>

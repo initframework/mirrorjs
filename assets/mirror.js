@@ -205,14 +205,16 @@ let parser = {
                   // get the expression
                   _expr = match[0];
                   // remove the double curly braces
-                  _expr = _expr.replace(/[}{]/gi, "");
+                  // _expr = _expr.replace("{", "").replace("}", "");
+                  // _expr = _expr.replace(/[{]{2}/, "");
+                  _expr = _expr.replace(/([{]{2}|[}]{2})/gi, "");
                   // register expression as a watcher
                   // set watcher attributes
                   const type = "expr", index = generator.__hash(), action = _expr ;
                   // register condition as a watcher
                   watcher.__register(index,type,action);
                   // replace match with index
-                  line = line.replace(_expr, `{{${index}}}`)
+                  line = line.replace(match[0], `{{${index}}}`);
                }
 
                // add to parsed body document
