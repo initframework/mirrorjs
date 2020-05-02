@@ -160,7 +160,7 @@ let parser = {
                // merge the remaining arrays
                let _conds = sentences.slice(1, sentences.length);
                // merge the variable into a string
-               _conds = _conds.join("").trim();
+               _conds = _conds.join(" ").trim();
                // strip out the conditional brackets
                // _conds = _conds.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
@@ -176,7 +176,7 @@ let parser = {
                // merge the remaining arrays
                let _expr = sentences.slice(1, sentences.length);
                // merge the variable into a string
-               _expr = _expr.join("").trim();
+               _expr = _expr.join(" ").trim();
                // strip out the conditional brackets
                // _expr = _expr.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
@@ -198,12 +198,14 @@ let parser = {
 
                // read expressions in each line
                let regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
-               let expr = null;
-               // match continuosly
+               let _expr = null;
+               // match continuously
                while (match = regex.exec(line))
                {
                   // get the expression
                   _expr = match[0];
+                  // remove the double curly braces
+                  _expr = _expr.replace(/[}{]/gi, "");
                   // register expression as a watcher
                   // set watcher attributes
                   const type = "expr", index = generator.__hash(), action = _expr ;
@@ -211,7 +213,6 @@ let parser = {
                   watcher.__register(index,type,action);
                   // replace match with index
                   line = line.replace(_expr, `{{${index}}}`)
-                  
                }
 
                // add to parsed body document
