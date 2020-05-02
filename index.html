@@ -16,7 +16,7 @@
 </head>
 <body id="body" class="bg-secondary">
    
-   @var $phone = 'samsung'; $model = A10; $company = "Apple";
+   @var $phone = 'samsung'; $model = 'A10'; $company = "Apple";
    @var $phone = "Apple";
    @var $phones = ["Apple", "Samsung", "Tecno", "Huawei"];
    @var $company = {"name": "Apple", "country": "USA", "employees": 50000, "founders": "Steve  Job"};
@@ -24,7 +24,7 @@
 
    @vars
       $name = "Ebuka";
-      $age = 12;
+      $age = 22;
    @@vars
 
    @if ($con$tant == $company)
@@ -36,6 +36,8 @@
    @for (field in $company)
       <p>{{field}} : {{$company[field]}}</p>
    @end
+
+   <p class="my-3 bg-info text-dark p-3 rounded container text-center">Hi there, my name is {{$name}} ans I am {{$age}}. I bought an {{$phone}} {{$model}} lastweek. I am very happy :) because in 2 years I would be {{$age + 2}} </p>
 
    <!-- arrays -->
    @for (phone of $phones)

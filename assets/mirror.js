@@ -61,31 +61,32 @@ let variable = {
       let arr_regex = /[\[]{1}(.)+[\]]{1}/gi
       // regex for matching another variable
       let var_regex = /[$]{1}(.)+/gi
+      // regex for matching strings
+      let str_regex = /[('|")]{1}(.)+[('|")]{1}/gi
 
       // NOTE: the value of the variable could be an empty
-      if (value == "") { 
-         // console.log(`${value} is empty`);
+      if (value == "") {
          _value = null; 
       }
       // NOTE: the value of the variable could be an array
       // NOTE: the value of the variable could be an object
-      // ((?![{]{2})(?![}]{2}).)+
-      // arr_regex.test(value) || 
       else if (arr_regex.test(value) || obj_regex.test(value) ) {
          _value = JSON.parse(value);
-         
       }
 
       // NOTE: the value of the variable could be another variable
       else if (var_regex.test(value)) {
-         // console.log(`${value} is variable`);
          _value = window[value];
       }
-      
+
+      // NOTE: the value of the variable could be a string
+      else if (str_regex.test(value)) {
+         _value = value.replace(/['"]/gi, "").toString();
+      }
+
+      // NOTE: the value of the variable could be an integer
       else {
-         // console.log(`${value} is string or integer`);
-         // value is string or digit
-         _value = value.replace(/['"]/gi, "");;
+         _value = Number(value)
       }
 
       // find out if the variable has been registered before
