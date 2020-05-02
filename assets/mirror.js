@@ -56,38 +56,36 @@ let variable = {
       let _value = null;
 
       // regex for matching array
-      let arr_regex = /[{]{1}(.)+[}]{1}/gi
+      let obj_regex = /[{]{1}(.)+[}]{1}/gi
       // regex for matching objects
-      let obj_regex = /[\[]{1}(.)+[\]]{1}/gi
+      let arr_regex = /[\[]{1}(.)+[\]]{1}/gi
       // regex for matching another variable
       let var_regex = /[$]{1}(.)+/gi
 
       // NOTE: the value of the variable could be an empty
       if (value == "") { 
-         console.log(`${value} is empty`);
+         // console.log(`${value} is empty`);
          _value = null; 
       }
       // NOTE: the value of the variable could be an array
       // NOTE: the value of the variable could be an object
       // ((?![{]{2})(?![}]{2}).)+
+      // arr_regex.test(value) || 
       else if (arr_regex.test(value) || obj_regex.test(value) ) {
-         console.log(`${value} is array or object`);
-         // _value = JSON.parse(JSON.stringify(value));
-         _value = JSON.parse(`"${value}"`);
-         // console.log(`"${value}"`);
-         // console.log(_value);
+         _value = JSON.parse(value);
+         
       }
 
       // NOTE: the value of the variable could be another variable
       else if (var_regex.test(value)) {
-         console.log(`${value} is variable`);
+         // console.log(`${value} is variable`);
          _value = window[value];
       }
       
       else {
-         console.log(`${value} is string or integer`);
+         // console.log(`${value} is string or integer`);
          // value is string or digit
-         _value = value;
+         _value = value.replace(/['"]/gi, "");;
       }
 
       // find out if the variable has been registered before
@@ -201,8 +199,7 @@ let parser = {
                   // get the variable name
                   let _variableName = _variable[0].trim(); // is this sa valid variable name
                   // replace any semi-colon, quote and double-quote
-                  let _variableValue = _variable[1].trim().replace(/[";']/gi, ""); // this could be another variable or an array or an object
-                  // parsedDoc[count] = `<mirror type="var" data-${_variableName}=${_variableValue} />`
+                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
                   // set the variable as an mjs variable
                   variable.__set(_variableName,_variableValue);
                });
@@ -238,8 +235,7 @@ let parser = {
                   // get the variable name
                   let _variableName = _variable[0].trim(); // is this sa valid variable name
                   // replace any semi-colon, quote and double-quote
-                  let _variableValue = _variable[1].trim().replace(/[";']/gi, ""); // this could be another variable or an array or an object
-                  // parsedDoc[count] = `<mirror type="var" data-${_variableName}=${_variableValue} />`
+                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
                   // set the variable as an mjs variable
                   variable.__set(_variableName,_variableValue);
                });
