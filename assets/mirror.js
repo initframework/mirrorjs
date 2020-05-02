@@ -269,6 +269,10 @@ let parser = {
 
    },
 
+   __getContents: function() {
+      
+   },
+
    __readfileAsText: function() {
       // These provide a tree of all elements
       const body = document.getElementById("body");
