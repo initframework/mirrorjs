@@ -52,12 +52,44 @@ let _variable = [];
 let variable = {
 
    __set: function(name, value) {
-      // NOTE: the value of the variable could be another variable
-      // NOTE: the value of the variable could be an object
-      // NOTE: the value of the variable could be an array
       
-      // null the value if the value is empty
-      let _value = value == "" ? null : value ;
+      let _value = null;
+
+      // regex for matching array
+      let arr_regex = /[{]{1}(.)+[}]{1}/gi
+      // regex for matching objects
+      let obj_regex = /[\[]{1}(.)+[\]]{1}/gi
+      // regex for matching another variable
+      let var_regex = /[$]{1}(.)+/gi
+
+      // NOTE: the value of the variable could be an empty
+      if (value == "") { 
+         console.log(`${value} is empty`);
+         _value = null; 
+      }
+      // NOTE: the value of the variable could be an array
+      // NOTE: the value of the variable could be an object
+      // ((?![{]{2})(?![}]{2}).)+
+      else if (arr_regex.test(value) || obj_regex.test(value) ) {
+         console.log(`${value} is array or object`);
+         // _value = JSON.parse(JSON.stringify(value));
+         _value = JSON.parse(`"${value}"`);
+         // console.log(`"${value}"`);
+         // console.log(_value);
+      }
+
+      // NOTE: the value of the variable could be another variable
+      else if (var_regex.test(value)) {
+         console.log(`${value} is variable`);
+         _value = window[value];
+      }
+      
+      else {
+         console.log(`${value} is string or integer`);
+         // value is string or digit
+         _value = value;
+      }
+
       // find out if the variable has been registered before
       if (!_variable.includes(name)) {
          // make the variable globally avilable
@@ -333,7 +365,7 @@ let renderer = {
             if (watcher.type == "expr") {
                console.log(watcher.action);
                let result = evaluator.__execute(watcher.action);
-               console.log(result);
+               // console.log(result);
                body = body.replace("{{" + watcher.index + "}}", result);
                document.getElementById("body").innerHTML = body;
             }
@@ -346,7 +378,8 @@ let renderer = {
 let evaluator = {
 
    __execute: function(action) {
-      return Function('"use strict";' + action + ' ?? null;')();
+      return Function('"use strict";' + action + ';')();
+      // return Function('"use strict";' + action + ' ?? null;')();
    }
 
 }
