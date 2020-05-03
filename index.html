@@ -19,29 +19,50 @@
    @var $phone = 'samsung'; $model = 'A10'; $company = "Apple";
    @var $phone = "Apple";
    @var $phones = ["Apple", "Samsung", "Tecno", "Huawei"];
-   @var $company = {"name": "Apple", "country": "USA", "employees": 50000, "founders": "Steve  Job"};
+   @var $company = {"name": "Apple", "country": "USA", "employees": 50000, "founders": "Steve Job"};
    @var $con$tant = $company;
 
    @vars
       $name = "Ebuka";
-      $age = 22;
+      $age = 12;
+      $bg = 'bg-info';
+      $text = 'text-light';
    @@vars
 
    @if ($con$tant == $company)
-      <a class="{{ $age > 18 ? 'text-danger' : 'text-success' }} display-4" href="foo">Next</a>
+
+      <div class="container bg-info p-4 m-4">
+         An expression can be used 
+         <li>within a tag <br> Example: $name is {{$name}}</li>
+         
+         <li>as part of an atribute value (e.g class attribute)</li>
+      </div>
+
+      <p :class="{{($age > 18 ? 'text-danger' : 'text-success')}}">I am looking for attribute expressions</p>
+
+      <p :class="{{$bg,$text,'rounded'}}" :title="{{$name,'is',($age > 18 ? 'an adult' : 'a boy'),'that\'s all'}}">Single Attribute</p>
+
+      <p class="text-center">
+         
+         <span id='firehand' >Hi</span> 
+         <p class="text-danger bg-white" > Hands On Fire</p>
+         <button onclick="document.getElementById('firehand').innerHTML = 'rounded'">Chook Hand</button>
+
+      </p>
    @end
 
    <!-- objects and associative arrays -->
    @var field = 'name';
    @for (field in $company)
-      <p>{{field}} : {{$company[field]}}</p>
+      <p>{{field}} : {{$company.name}}</p>
+      <p>{{field}} : {{JSON.stringify($company)}}</p>
    @end
 
    <p class="my-3 bg-info text-dark p-3 rounded container text-center">Hi there, my name is {{$name}} ans I am {{$age}}. I bought an {{$phone}} {{$model}} lastweek. I am very happy :) because in 2 years I would be {{$age + 2}} </p>
 
    <!-- arrays -->
    @for (phone of $phones)
-      <p>{{phone}}</p>
+      <p>{{$phone}}</p>
    @end
 
    <div>

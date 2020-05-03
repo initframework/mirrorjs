@@ -236,7 +236,8 @@ let parser = {
                   // get the variable name
                   let _variableName = _variable[0].trim(); // is this sa valid variable name
                   // replace any semi-colon, quote and double-quote
-                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
+                  // BUG: it is trimming out values improperly
+                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object
                   // set the variable as an mjs variable
                   variable.__set(_variableName,_variableValue);
                });
@@ -285,24 +286,62 @@ let parser = {
             else {
 
                // read expressions in each line
-               let regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
-               let _expr = null;
-               // match continuously
-               while (match = regex.exec(line))
+               // a basic expression
+               let expr_regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
+
+               // let attr_expr_regex = /(:[a-z]+=)("|')[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}("|')/gi
+
+               let attr_expr_regex = /(:[a-z-]+=)("|')((?![:]{1}[a-z]+).)+("|')/gi
+
+               // an expression in an attribute
+               // let attr_regex = ;
+
+               let _expr = _attr = null;
+               let index = action = type = _attrName = _attrValue = _attrDoc = null;
+            
+               // match an expression in an attribute
+               while (match = attr_expr_regex.exec(line))
+               {
+                  // get the expression
+                  _attr = match[0];
+                  // break the match to get the attribute and its value
+                  _attr = _attr.split("=");
+                  // get the attribute name and remove the colon(:)
+                  _attrName = _attr[0].trim().replace(":", "");
+                  // get the attribute value
+                  _attrValue = _attr[1].trim();
+                  _attrValue = _attrValue.slice(1, _attrValue.length - 1);
+                  // for multiple attibute values, we'd separate with comma
+                  _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
+                  console.log(_attrValue);
+                  // remove the double curly braces
+                  _attrValue = _attrValue.replace(/([{]{2}|[}]{2})/gi, "");
+                  // use the attribute name to form the action
+                  // add an index to the element
+                  index = generator.__hash(); type = "expr-attr"
+                  action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
+                  // register expression as a watcher
+                  watcher.__register(index,type,action);
+                  // replace match with index
+                  _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
+                  line = line.replace(match[0], _attrDoc);
+               }
+ 
+
+               // // match the remaining type of expressions
+               while (match = expr_regex.exec(line))
                {
                   // get the expression
                   _expr = match[0];
                   // remove the double curly braces
-                  // _expr = _expr.replace("{", "").replace("}", "");
-                  // _expr = _expr.replace(/[{]{2}/, "");
                   _expr = _expr.replace(/([{]{2}|[}]{2})/gi, "");
                   // register expression as a watcher
                   // set watcher attributes
-                  const type = "expr", index = generator.__hash(), action = `return ${_expr}` ;
-                  // register condition as a watcher
+                  type = "expr-tag", index = generator.__hash(), action = `document.getElementById("${index}").innerHTML = ${_expr}` ;
+                  // register expression as a watcher
                   watcher.__register(index,type,action);
                   // replace match with index
-                  line = line.replace(match[0], `{{${index}}}`);
+                  line = line.replace(match[0], `<span id="${index}">${_expr}</span>`);
                }
 
                // add to parsed body document
@@ -359,12 +398,12 @@ let renderer = {
       for (const property in _watcher) {
          if (_watcher.hasOwnProperty(property)) {
             const watcher = _watcher[property];
-            if (watcher.type == "expr") {
+            if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
                console.log(watcher.action);
-               let result = evaluator.__execute(watcher.action);
+               evaluator.__execute(watcher.action);
                // console.log(result);
-               body = body.replace("{{" + watcher.index + "}}", result);
-               document.getElementById("body").innerHTML = body;
+               // body = body.replace("{{" + watcher.index + "}}", result);
+               // document.getElementById("body").innerHTML = body;
             }
          }
       }
@@ -389,7 +428,7 @@ let generator = {
          let i =  Math.ceil(Math.random() * 16) - 1;
          hash += hex.charAt(i)
       }
-      return hash;
+      return `mjs-${hash}`;
    }
 
 }
