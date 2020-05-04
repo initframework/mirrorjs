@@ -20,6 +20,7 @@ let mirror = {
       // parse the document
       // and extract variables, directives and expressions
       const parsedDoc = parser.__parse(bodyTxt);
+      _bodyState.push(parsedDoc);
       // console.log(parsedDoc);
 
       // the document body can now replace the original body
@@ -35,7 +36,7 @@ let mirror = {
 
       // now lets run the first render
       // let's start with expressions
-      renderer.__expressions(parsedDoc.join(""))
+      reflector.__setupReflect()
 
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
@@ -45,6 +46,7 @@ let mirror = {
 
 }
 
+let _bodyState = [];
 let _variable_watcher = {};
 let _watcher = {};
 let _variable = [];
@@ -168,7 +170,8 @@ let parser = {
    // parse the document
    // retrieve variables
    // identify expressions
-   // identify watchers
+   // create watchers
+   // make the new html body
    __parse: function(documentArr) {
 
       let parsedDoc = [], count = 0;
@@ -253,7 +256,7 @@ let parser = {
                // strip out the conditional brackets
                // _conds = _conds.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
-               const type = "cond", index = generator.__hash(), action = `return ${_conds};` ;
+               const type = "cond", index = generator.__hash(), action = `if ${_conds} { document.getElementById('${index}').style.display = 'contents'; } else { document.getElementById('${index}').style.display = 'none'; }` ;
                // register condition as a watcher
                watcher.__register(index,type,action);
                // make html
@@ -261,15 +264,30 @@ let parser = {
             }
 
             // open loops
-            else if (sentences[0] == "@for") {
+            else if (sentences[0] == "@for-in") {
                // merge the remaining arrays
                let _expr = sentences.slice(1, sentences.length);
                // merge the variable into a string
                _expr = _expr.join(" ").trim();
                // strip out the conditional brackets
-               // _expr = _expr.replace(/[)(]/gi, ""); // ***
+               _expr = _expr.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
-               const type = "loop", index = generator.__hash(), action = `return ${_expr};` ;
+               const type = "loop-in", index = generator.__hash(), action = `${_expr}` ;
+               // register condition as a watcher
+               watcher.__register(index,type,action);
+               // make html
+               parsedDoc.push(`<mirror id="${index}">`);
+            }
+
+            else if (sentences[0] == "@for-of") {
+               // merge the remaining arrays
+               let _expr = sentences.slice(1, sentences.length);
+               // merge the variable into a string
+               _expr = _expr.join(" ").trim();
+               // strip out the conditional brackets
+               _expr = _expr.replace(/[)(]/gi, ""); // ***
+               // set watcher attributes
+               const type = "loop-of", index = generator.__hash(), action = `${_expr}` ;
                // register condition as a watcher
                watcher.__register(index,type,action);
                // make html
@@ -282,23 +300,20 @@ let parser = {
                parsedDoc.push(`</mirror>`);
             }
 
-            // read any other html
+            // read expressions and any other html
             else {
 
                // read expressions in each line
                // a basic expression
                let expr_regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
 
-               // let attr_expr_regex = /(:[a-z]+=)("|')[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}("|')/gi
-
+               // an expression in an attribute
                let attr_expr_regex = /(:[a-z-]+=)("|')((?![:]{1}[a-z]+).)+("|')/gi
 
-               // an expression in an attribute
-               // let attr_regex = ;
-
+               // variables to be used for expressions
                let _expr = _attr = null;
                let index = action = type = _attrName = _attrValue = _attrDoc = null;
-            
+
                // match an expression in an attribute
                while (match = attr_expr_regex.exec(line))
                {
@@ -313,7 +328,6 @@ let parser = {
                   _attrValue = _attrValue.slice(1, _attrValue.length - 1);
                   // for multiple attibute values, we'd separate with comma
                   _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
-                  console.log(_attrValue);
                   // remove the double curly braces
                   _attrValue = _attrValue.replace(/([{]{2}|[}]{2})/gi, "");
                   // use the attribute name to form the action
@@ -326,9 +340,8 @@ let parser = {
                   _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
                   line = line.replace(match[0], _attrDoc);
                }
- 
 
-               // // match the remaining type of expressions
+               // match the remaining type of expressions
                while (match = expr_regex.exec(line))
                {
                   // get the expression
@@ -337,7 +350,7 @@ let parser = {
                   _expr = _expr.replace(/([{]{2}|[}]{2})/gi, "");
                   // register expression as a watcher
                   // set watcher attributes
-                  type = "expr-tag", index = generator.__hash(), action = `document.getElementById("${index}").innerHTML = ${_expr}` ;
+                  type = "expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
                   // register expression as a watcher
                   watcher.__register(index,type,action);
                   // replace match with index
@@ -391,22 +404,53 @@ let parser = {
 
 }
 
-let renderer = {
+let reflector = {
 
-   __expressions: function(body) {
+   __setupReflect: function() {
       // for each watcher
       for (const property in _watcher) {
          if (_watcher.hasOwnProperty(property)) {
             const watcher = _watcher[property];
-            if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
-               console.log(watcher.action);
+            // execute conditions
+            if (watcher.type == "cond") {
+               console.log("cond", watcher.action);
                evaluator.__execute(watcher.action);
-               // console.log(result);
-               // body = body.replace("{{" + watcher.index + "}}", result);
-               // document.getElementById("body").innerHTML = body;
+            }
+            if (watcher.type == "loop-in") {}
+            if (watcher.type == "loop-of") {
+               // TODO: optimize this with memoization
+               // store an id to indicate if the real action has been saved in the watcher as a new property
+               
+               // clear the inner elements
+               let el = document.getElementById(watcher.index)
+               el.innerHTML = "";
+               // form the main action to populate the el' children
+               // this is where re-evaluation takes place
+               let action = `for ${watcher.action} { document.getElementById('${watcher.index}').innerHTML += \`${watcher.content}\`; }`;
+               console.log("loop", action);
+               evaluator.__execute(action);
+
+               // for (const iterator of object) {
+                  
+               // }
+
+               // console.log(evaluator.__execute(action));
+               // while (evaluator.__execute(action))
+               // { 
+               //    document.getElementById(watcher.index).innerHTML += `${watcher.content}`;
+               // }
+
+            }
+            if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
+               console.log("expr", watcher.action);
+               evaluator.__execute(watcher.action);
             }
          }
       }
+   },
+
+   __reflect: function(index, type, action) {
+
    }
 
 }

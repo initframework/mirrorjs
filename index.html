@@ -13,6 +13,10 @@
    <!-- Main -->
    <script src="assets/main.js"></script>
 
+   <style>
+      
+   </style>
+
 </head>
 <body id="body" class="bg-secondary">
    
@@ -31,6 +35,10 @@
 
    @if ($con$tant == $company)
 
+      <h1>We are contents of a condition</h1>
+
+      Company name is {{$company.name}}
+
       <div class="container bg-info p-4 m-4">
          An expression can be used 
          <li>within a tag <br> Example: $name is {{$name}}</li>
@@ -38,32 +46,35 @@
          <li>as part of an atribute value (e.g class attribute)</li>
       </div>
 
-      <p :class="{{($age > 18 ? 'text-danger' : 'text-success')}}">I am looking for attribute expressions</p>
+      <p :class="{{($age > 18 ? 'text-danger' : 'text-success'),'bg-light'}}">I am looking for attribute expressions</p>
 
       <p :class="{{$bg,$text,'rounded'}}" :title="{{$name,'is',($age > 18 ? 'an adult' : 'a boy'),'that\'s all'}}">Single Attribute</p>
 
       <p class="text-center">
-         
          <span id='firehand' >Hi</span> 
          <p class="text-danger bg-white" > Hands On Fire</p>
          <button onclick="document.getElementById('firehand').innerHTML = 'rounded'">Chook Hand</button>
-
       </p>
+
+      @if ( 1 == 1 )
+         <h3>1 is equal to 1</h3>
+      @end
+
    @end
 
    <!-- objects and associative arrays -->
-   @var field = 'name';
-   @for (field in $company)
-      <p>{{field}} : {{$company.name}}</p>
-      <p>{{field}} : {{JSON.stringify($company)}}</p>
-   @end
+   <!-- <h4>We are contents of an object loop</h4> -->
+   <!-- @for-in ($company)
+      <p>{{$company.name}}</p>
+   @end -->
 
    <p class="my-3 bg-info text-dark p-3 rounded container text-center">Hi there, my name is {{$name}} ans I am {{$age}}. I bought an {{$phone}} {{$model}} lastweek. I am very happy :) because in 2 years I would be {{$age + 2}} </p>
 
    <!-- arrays -->
-   @for (phone of $phones)
+   <!-- <h5>We are contents of an array loop</h4> -->
+   <!-- @for-of ($phone,$phones)
       <p>{{$phone}}</p>
-   @end
+   @end -->
 
    <div>
       <h1>Boy</h1>
