@@ -3,82 +3,80 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>MJs</title>
-
-   <!-- Vendor -->
+   <title>So Far with Mirror.Js</title>
    <link rel="stylesheet" href="assets/bootstrap.css">
-   <script src="assets/jquery.min.js"></script>
-   <!-- Mirror JS -->
    <script src="assets/mirror.js"></script>
-   <!-- Main -->
-   <script src="assets/main.js"></script>
-
-   <style>
-      
-   </style>
-
+   <script src="assets/sofar.js"></script>
 </head>
-<body id="body" class="bg-secondary">
+<body id="body">
    
-   @var $phone = 'samsung'; $model = 'A10'; $company = "Apple";
-   @var $phone = "Apple";
-   @var $phones = ["Apple", "Samsung", "Tecno", "Huawei"];
-   @var $company = {"name": "Apple", "country": "USA", "employees": 50000, "founders": "Steve Job"};
-   @var $con$tant = $company;
-
    @vars
-      $name = "Ebuka";
-      $age = 12;
-      $bg = 'bg-info';
-      $text = 'text-light';
+      $odinis = [{"name":"Ebuka", "age":22},{"name":"Pascal", "age":20},{"name":"Augustine", "age":19},{"name":"Daniel", "age":15}];
+      $current = "Ebuka";
+      $names = ["Alex","Anabelle","James","Queen"];
+      $name = "Ebuka Odini";
+      $age = 22; $codingForHowLong = 4;
    @@vars
 
-   @if ($con$tant == $company)
+   <div class="container border rounded bg-light my-5 mx-auto p-5 text-dark">
 
-      <h1>We are contents of a condition</h1>
+      <h3 style="text-decoration: underline;">So Far with Mirror.js</h3>
 
-      Company name is {{$company.name}}
-
-      <div class="container bg-info p-4 m-4">
-         An expression can be used 
-         <li>within a tag <br> Example: $name is {{$name}}</li>
-         
-         <li>as part of an atribute value (e.g class attribute)</li>
+      <div class="my-2 rounded border p-3">
+         <h5>Variable declaration</h5>
+         <p>
+            Variables are a good way to set data that are required by the page. To create a single variable, use this: <br>
+            <code>&commat;var $variable = value;</code> <br>
+            And to create multiple variables on a single line, use this: <br>
+            <code>&commat;var $variable_1 = value_1; &commat;var $variable_2 = value_2;</code> <br>
+            <blockquote class="text-info">Note: every variable must end with a semi-colon (;)</blockquote>
+         </p>
+      </div>
+      
+      <div class="my-2 rounded border p-3">
+         <h5>Interpolation</h5>
+         <p>
+            Hi, I am {{ $name }}, and I started coding at age {{ $age - $codingForHowLong }}, It's cool because it's just been {{ $codingForHowLong }} years now. lol. :)
+         </p>
       </div>
 
-      <p :class="{{($age > 18 ? 'text-danger' : 'text-success'),'bg-light'}}">I am looking for attribute expressions</p>
+      <div class="my-2 rounded border p-3">
+         <h5>Interpolation in HTML Attributes</h5>
+         <p :title="{{$name}}">
+            Hover around me to see my name. lol. :)
+         </p>
+      </div>
 
-      <p :class="{{$bg,$text,'rounded'}}" :title="{{$name,'is',($age > 18 ? 'an adult' : 'a boy'),'that\'s all'}}">Single Attribute</p>
+      <div class="my-2 rounded border p-3">
+         <h5>Conditional Rendering</h5>
+         @if ($age > 18)
+         <p>
+            {{ $name }} is an adult. lol. :)
+         </p>
+         @endif
+         Well, that's because He's above 18.
+      </div>
 
-      <p class="text-center">
-         <span id='firehand' >Hi</span> 
-         <p class="text-danger bg-white" > Hands On Fire</p>
-         <button onclick="document.getElementById('firehand').innerHTML = 'rounded'">Chook Hand</button>
-      </p>
+      <div class="my-2 rounded border p-3">
+         <h5>List Rendering with Objects</h5>
+         @for ($odini in $odinis)
+         <p>
+            I am {{ $odini.name }}, and I am {{ $odini.age }} years old.
+         </p>
+         @endfor
+      </div>
 
-      @if ( 1 == 1 )
-         <h3>1 is equal to 1</h3>
-      @end
+      <div class="my-2 rounded border p-3">
+         <h5>List Rendering with Arrays</h5>
+         @for ($name in $names)
+         <p>
+            Hello {{ $name }}
+         </p>
+         @endfor
+      </div>
+      
 
-   @end
-
-   <!-- objects and associative arrays -->
-   <!-- <h4>We are contents of an object loop</h4> -->
-   <!-- @for-in ($company)
-      <p>{{$company.name}}</p>
-   @end -->
-
-   <p class="my-3 bg-info text-dark p-3 rounded container text-center">Hi there, my name is {{$name}} ans I am {{$age}}. I bought an {{$phone}} {{$model}} lastweek. I am very happy :) because in 2 years I would be {{$age + 2}} </p>
-
-   <!-- arrays -->
-   <!-- <h5>We are contents of an array loop</h4> -->
-   <!-- @for-of ($phone,$phones)
-      <p>{{$phone}}</p>
-   @end -->
-
-   <div>
-      <h1>Boy</h1>
    </div>
-
+   
 </body>
 </html>

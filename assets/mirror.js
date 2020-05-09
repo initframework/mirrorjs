@@ -50,6 +50,7 @@ let _bodyState = [];
 let _variable_watcher = {};
 let _watcher = {};
 let _variable = [];
+let _loop_watcher = {};
 
 let variable = {
 
@@ -145,8 +146,28 @@ let watcher = {
          index: index,
          type: type,
          action: action,
-         content: null
+         content: null,
+         children: []
       };
+   },
+
+   __addChildren: function(parent, child) {
+      if (_watcher.hasOwnProperty(parent)) {
+         // register as a child watcher to this loop node
+         const watcher = _watcher[parent];
+         watcher.children.push(child);
+      }
+   },
+
+   // temporary stack
+   __registerLoopWatcher: function(elemIndex, newElemIndex, needleRegex, needle) {
+      // if not in array, create array and push; else push.
+      if (!_loop_watcher.hasOwnProperty(elemIndex)) {
+         _loop_watcher[elemIndex] = [];
+         _loop_watcher[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle});
+      } else {
+         _loop_watcher[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle});
+      }
    },
 
    __registerContents: function() {
@@ -155,7 +176,7 @@ let watcher = {
          if (_watcher.hasOwnProperty(property)) {
             const watcher = _watcher[property];
             // register its content if its type is a cond or a loop
-            if (watcher.type == "cond" || watcher.type == "loop") {
+            if (watcher.type == "cond" || watcher.type == "loop" || watcher.type == "loop-in" || watcher.type == "loop-of") {
                watcher.content = document.getElementById(watcher.index).innerHTML
             }
          }
@@ -178,14 +199,15 @@ let parser = {
 
       if (typeof documentArr == "object") {
          
-         let var_expecting = false; //, cond_expecting = [false], loop_expecting = [false];
+         let var_open = false; //, cond_expecting = [false], loop_expecting = [false];
+         let loop_index = null; let loop_index_stack = [];
          documentArr.forEach(line => {
             // break each sentence in the line into words
             let sentences = line.split(" ");
 
             // if no multiple var tag is open
             // single line variables
-            if ( var_expecting == false && sentences[0] == "@var" ) {
+            if ( var_open == false && sentences[0] == "@var" ) {
                // this is a singular variable
                // merge the remaining arrays
                let _variables = sentences.slice(1, sentences.length);
@@ -210,20 +232,20 @@ let parser = {
             }
 
             // open vars
-            else if ( var_expecting == false && sentences[0] == "@vars" ) {
+            else if ( var_open == false && sentences[0] == "@vars" ) {
                // @vars cannot be inside @vars
-               var_expecting = true;
+               var_open = true;
                // i'd be expecting another variable
                // hence you can't enter anything not a variable here
             }
             
             // close vars
-            else if ( var_expecting == true && sentences[0] == "@@vars") {
-               var_expecting = false;
+            else if ( var_open == true && sentences[0] == "@@vars") {
+               var_open = false;
             }
 
             // multi line variables
-            else if (var_expecting == true) {
+            else if (var_open == true) {
                // break each sentence in the line into words
                let _variables = line;
                // get the variable
@@ -246,6 +268,24 @@ let parser = {
                });
             }
 
+            // open loops
+            else if (sentences[0] == "@for") {
+               // merge the remaining arrays
+               let _expr = sentences.slice(1, sentences.length);
+               // merge the variable into a string
+               _expr = _expr.join(" ").trim();
+               // strip out the conditional brackets
+               _expr = _expr.replace(/[)(]/gi, ""); // ***
+               // set watcher attributes
+               const type = "loop", index = generator.__hash(), action = `${_expr}` ;
+               // register condition as a watcher
+               watcher.__register(index,type,action);
+               // make html
+               parsedDoc.push(`<mirror id="${index}">`);
+               loop_index_stack.push(index);
+               loop_index = index;
+            }
+
             // open cond
             // NOTE: EVERY conditional stmt could be a watcher on a variable
             else if (sentences[0] == "@if") {
@@ -255,47 +295,37 @@ let parser = {
                _conds = _conds.join(" ").trim();
                // strip out the conditional brackets
                // _conds = _conds.replace(/[)(]/gi, ""); // ***
-               // set watcher attributes
-               const type = "cond", index = generator.__hash(), action = `if ${_conds} { document.getElementById('${index}').style.display = 'contents'; } else { document.getElementById('${index}').style.display = 'none'; }` ;
-               // register condition as a watcher
-               watcher.__register(index,type,action);
-               // make html
-               parsedDoc.push(`<mirror id="${index}">`);
+
+               // consider an outer loop
+               if (loop_index != null) {
+                  // set watcher attributes
+                  const type = "loop-cond", index = generator.__hash(), action = `if ${_conds} { document.getElementById('${index}').style.display = 'contents'; } else { document.getElementById('${index}').style.display = 'none'; }` ;
+                  // register condition as a watcher
+                  watcher.__register(index,type,action);
+                  // make html
+                  parsedDoc.push(`<mirror id="${index}" data-loop="${loop_index}">`);
+                  // register this watcher index as a child to parent loop
+                  watcher.__addChildren(loop_index, index);
+               } else {
+                  // set watcher attributes
+                  const type = "cond", index = generator.__hash(), action = `if ${_conds} { document.getElementById('${index}').style.display = 'contents'; } else { document.getElementById('${index}').style.display = 'none'; }` ;
+                  // register condition as a watcher
+                  watcher.__register(index,type,action);
+                  // make html
+                  parsedDoc.push(`<mirror id="${index}">`);
+               }
             }
 
-            // open loops
-            else if (sentences[0] == "@for-in") {
-               // merge the remaining arrays
-               let _expr = sentences.slice(1, sentences.length);
-               // merge the variable into a string
-               _expr = _expr.join(" ").trim();
-               // strip out the conditional brackets
-               _expr = _expr.replace(/[)(]/gi, ""); // ***
-               // set watcher attributes
-               const type = "loop-in", index = generator.__hash(), action = `${_expr}` ;
-               // register condition as a watcher
-               watcher.__register(index,type,action);
-               // make html
-               parsedDoc.push(`<mirror id="${index}">`);
+            // close loop
+            else if (sentences[0] == "@endfor") {
+               // do nothing for now
+               parsedDoc.push(`</mirror>`);
+               // remove the current loop
+               loop_index_stack.pop();
             }
 
-            else if (sentences[0] == "@for-of") {
-               // merge the remaining arrays
-               let _expr = sentences.slice(1, sentences.length);
-               // merge the variable into a string
-               _expr = _expr.join(" ").trim();
-               // strip out the conditional brackets
-               _expr = _expr.replace(/[)(]/gi, ""); // ***
-               // set watcher attributes
-               const type = "loop-of", index = generator.__hash(), action = `${_expr}` ;
-               // register condition as a watcher
-               watcher.__register(index,type,action);
-               // make html
-               parsedDoc.push(`<mirror id="${index}">`);
-            }
-
-            // close cond and loop
-            else if (sentences[0] == "@end") {
+            // close cond
+            else if (sentences[0] == "@endif") {
                // do nothing for now
                parsedDoc.push(`</mirror>`);
             }
@@ -348,13 +378,22 @@ let parser = {
                   _expr = match[0];
                   // remove the double curly braces
                   _expr = _expr.replace(/([{]{2}|[}]{2})/gi, "");
-                  // register expression as a watcher
-                  // set watcher attributes
-                  type = "expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
-                  // register expression as a watcher
-                  watcher.__register(index,type,action);
-                  // replace match with index
-                  line = line.replace(match[0], `<span id="${index}">${_expr}</span>`);
+                  // consider outer loop
+                  if (loop_index != null) {
+                     // set watcher attributes
+                     type = "loop-expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
+                     watcher.__register(index,type,action);
+                     // replace match with index
+                     line = line.replace(match[0], `<span id="${index}" data-loop="${loop_index}">${_expr}</span>`);
+                     // register this watcher index as a child to parent loop
+                     watcher.__addChildren(loop_index, index);
+                  } else {
+                     // set watcher attributes
+                     type = "expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
+                     watcher.__register(index,type,action);
+                     // replace match with index
+                     line = line.replace(match[0], `<span id="${index}">${_expr}</span>`);
+                  }
                }
 
                // add to parsed body document
@@ -409,15 +448,20 @@ let reflector = {
    __setupReflect: function() {
       // for each watcher
       for (const property in _watcher) {
+
          if (_watcher.hasOwnProperty(property)) {
             const watcher = _watcher[property];
+            
             // execute conditions
             if (watcher.type == "cond") {
-               console.log("cond", watcher.action);
-               evaluator.__execute(watcher.action);
+               // console.log("cond", watcher.action);
+               // html coverts > to &gt; and < to &lt;
+               // so let's reverse it
+               let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
+               evaluator.__execute(action);
             }
-            if (watcher.type == "loop-in") {}
-            if (watcher.type == "loop-of") {
+            
+            if (watcher.type == "loop") {
                // TODO: optimize this with memoization
                // store an id to indicate if the real action has been saved in the watcher as a new property
                
@@ -425,24 +469,71 @@ let reflector = {
                let el = document.getElementById(watcher.index)
                el.innerHTML = "";
                // form the main action to populate the el' children
-               // this is where re-evaluation takes place
-               let action = `for ${watcher.action} { document.getElementById('${watcher.index}').innerHTML += \`${watcher.content}\`; }`;
-               console.log("loop", action);
+               // break the separator to extract the used variable name
+               let action = watcher.action.split(" in ");
+               // let cnt = watcher.content;
+               let needle = action[0].trim();
+               let haystack = action[1].trim();
+               // ((?! )(?!<)(?!>).)
+               let needleRegex = new RegExp(needle.replace(/[$]+/gi, "[$]")+'*',"gi");
+               
+               // console.log(needleRegex);
+               action = 
+               `var count = 0; // console.log(_watcher['${watcher.index}']);
+               for (const key in ${haystack}) { 
+                  if (${haystack}.hasOwnProperty(key)) {
+                     let cnt = \`${watcher.content}\`; 
+                     let re = ${needleRegex};
+                     
+                     // re-index the watcher
+                     // get all children of the loop watcher
+                     if (_watcher['${watcher.index}'].children != []) {
+                        (_watcher['${watcher.index}'].children).forEach(index => {
+                           // create regex for matching the id
+                           let indexRegex = new RegExp(index,"gi");
+                           // register a new watcher index for the watcher
+                           let newIndex = index + count;
+                           watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
+                           // renew the id for the html
+                           cnt = cnt.replace(indexRegex, newIndex);
+                        });
+                     }
+                     
+                     // make the expression executable
+                     cnt = cnt.replace(re, '${haystack}'+'['+count+']');
+                     document.getElementById('${watcher.index}').innerHTML += cnt;
+                     // increment counter
+                     count++;
+                  }
+               }`;
+               // console.log(action);
+               // action = `for (let ${needle} in ${haystack}) { let cnt = \`${watcher.content}\`; cnt = cnt.replace(${needleRegex}, ${Object.assign({}, needle)}); document.getElementById('${watcher.index}').innerHTML += cnt }`;
+               // console.log("loop", action);
                evaluator.__execute(action);
+            }
 
-               // for (const iterator of object) {
-                  
-               // }
-
-               // console.log(evaluator.__execute(action));
-               // while (evaluator.__execute(action))
-               // { 
-               //    document.getElementById(watcher.index).innerHTML += `${watcher.content}`;
-               // }
+            if (watcher.type == "loop-expr-tag" || watcher.type == "loop-expr-attr") {
+               
+               let realIndex = watcher.index;
+               // loop through all instances of the index
+               (_loop_watcher[realIndex]).forEach(loop_index => {
+                  let action = watcher.action;
+                  // create regex for matching the id in the action
+                  let indexRegex = new RegExp(realIndex,"gi");
+                  // renew the id in the action stmt
+                  action = action.replace(indexRegex, loop_index.index);
+                  // replace the old needle with a new one
+                  action = action.replace(loop_index.needleRegex, loop_index.needle);
+                  // console.log(action);
+                  // evaluate the new action
+                  evaluator.__execute(action);
+               });
+                  // loop_index_stack.pop()
 
             }
+
             if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
-               console.log("expr", watcher.action);
+               // console.log("expr", watcher.action);
                evaluator.__execute(watcher.action);
             }
          }
@@ -460,6 +551,10 @@ let evaluator = {
    __execute: function(action) {
       return Function('"use strict";' + action + ';')();
       // return Function('"use strict";' + action + ' ?? null;')();
+   },
+
+   __reexecute: function(action, dependence) {
+
    }
 
 }
