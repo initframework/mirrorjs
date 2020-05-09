@@ -1,11 +1,11 @@
 
 /*
    MirrorJs Features
-   * Expressions
-   * Directives
+   * Interpolation
+   * Conditional Rendering
    * List Rendering
-   * Events
-   * Statefulness
+   * Event Driven Statefulness
+   * Reactive
 */
 
 let mirror = {
@@ -360,15 +360,31 @@ let parser = {
                   _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
                   // remove the double curly braces
                   _attrValue = _attrValue.replace(/([{]{2}|[}]{2})/gi, "");
-                  // use the attribute name to form the action
-                  // add an index to the element
-                  index = generator.__hash(); type = "expr-attr"
-                  action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
-                  // register expression as a watcher
-                  watcher.__register(index,type,action);
-                  // replace match with index
-                  _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
-                  line = line.replace(match[0], _attrDoc);
+
+                  // consider outer loop
+                  if (loop_index != null) {
+                     // set watcher attributes
+                     type = "loop-expr-attr", index = generator.__hash();
+                     action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
+                     // register expression as a watcher
+                     watcher.__register(index,type,action);
+                     // replace match with index
+                     _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
+                     line = line.replace(match[0], _attrDoc);
+                     // register this watcher index as a child to parent loop
+                     watcher.__addChildren(loop_index, index);
+                  } else {
+                     // use the attribute name to form the action
+                     // add an index to the element
+                     index = generator.__hash(); type = "expr-attr"
+                     action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
+                     // register expression as a watcher
+                     watcher.__register(index,type,action);
+                     // replace match with index
+                     _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
+                     line = line.replace(match[0], _attrDoc);
+                  }
+
                }
 
                // match the remaining type of expressions
@@ -452,15 +468,7 @@ let reflector = {
          if (_watcher.hasOwnProperty(property)) {
             const watcher = _watcher[property];
             
-            // execute conditions
-            if (watcher.type == "cond") {
-               // console.log("cond", watcher.action);
-               // html coverts > to &gt; and < to &lt;
-               // so let's reverse it
-               let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
-               evaluator.__execute(action);
-            }
-            
+            // loops
             if (watcher.type == "loop") {
                // TODO: optimize this with memoization
                // store an id to indicate if the real action has been saved in the watcher as a new property
@@ -512,6 +520,42 @@ let reflector = {
                evaluator.__execute(action);
             }
 
+            // loop dependent conditions
+            if (watcher.type == "loop-cond") {
+               let realIndex = watcher.index;
+               // console.log(realIndex);
+               // loop through all instances of the index
+               (_loop_watcher[realIndex]).forEach(loop_index => {
+                  let action = watcher.action;
+                  // console.log(action);
+                  // create regex for matching the id in the action
+                  let indexRegex = new RegExp(realIndex,"gi");
+                  // console.log(indexRegex);
+                  // renew the id in the action stmt
+                  action = action.replace(indexRegex, loop_index.index);
+                  // console.log(action);
+                  // replace the old needle with a new one
+                  action = action.replace(loop_index.needleRegex, loop_index.needle);
+                  // console.log(action);
+                  // html coverts > to &gt; and < to &lt;
+                  // so let's reverse it
+                  action = action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
+                  // console.log(action);
+                  // evaluate the new action
+                  evaluator.__execute(action);
+               });
+            }
+
+            // execute conditions
+            if (watcher.type == "cond") {
+               // console.log("cond", watcher.action);
+               // html coverts > to &gt; and < to &lt;
+               // so let's reverse it
+               let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
+               evaluator.__execute(action);
+            }
+
+            // loop dependent expressions
             if (watcher.type == "loop-expr-tag" || watcher.type == "loop-expr-attr") {
                
                let realIndex = watcher.index;
@@ -528,10 +572,10 @@ let reflector = {
                   // evaluate the new action
                   evaluator.__execute(action);
                });
-                  // loop_index_stack.pop()
-
+               // loop_index_stack.pop();
             }
 
+            // expressions
             if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
                // console.log("expr", watcher.action);
                evaluator.__execute(watcher.action);
