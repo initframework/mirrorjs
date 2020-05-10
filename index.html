@@ -13,7 +13,7 @@
    @vars
       $odinis = [{"name":"Ebuka", "age":22},{"name":"Pascal", "age":20},{"name":"Augustine", "age":19},{"name":"Daniel", "age":15}];
       $current = "Ebuka";
-      $names = ["Alex","Anabelle","James","Queen"];
+      $names = ["Alex","Anabelle","James","Queen", "Cleave"];
       $name = "Ebuka Odini";
       $age = 22; $codingForHowLong = 4;
    @@vars
@@ -25,10 +25,12 @@
       <div class="my-2 rounded border p-3">
          <h5>Variable declaration</h5>
          <p>
-            Variables are a good way to set data that are required by the page. To create a single variable, use this: <br>
+            Variables are a good way to set data that are required by the page. To declare a single variable, use this: <br>
             <code>&commat;var $variable = value;</code> <br>
-            And to create multiple variables on a single line, use this: <br>
-            <code>&commat;var $variable_1 = value_1; &commat;var $variable_2 = value_2;</code> <br>
+            And to declare multiple variables on a single line, use this: <br>
+            <code>&commat;var $variable_1 = value_1; $variable_2 = value_2;</code> <br>
+            To declare multiple variables in multiple lines, use this: <br>
+            <code>&commat;vars <br>$variable_1 = value_1; <br>$variable_2 = value_2; <br>&commat;&commat;vars</code>
             <blockquote class="text-info">Note: every variable must end with a semi-colon (;)</blockquote>
          </p>
       </div>
@@ -77,10 +79,16 @@
 
       <div class="my-2 rounded border p-3">
          <h5>Directive Nesting</h5>
+
          @for ($odini in $odinis)
-            @if ($name == "Anabelle")
+            @if ($odini.age < 18)
             <p>
-               Hello {{ $name }}
+               {{ $odini.name }} is still a Child 👶🏼, because he is below 18. haha😂😂
+            </p>
+            @endif
+            @if ($odini.age > 18)
+            <p>
+               {{ $odini.name }} is an Adult, because he is above 18. lol. 💪🏽
             </p>
             @endif
          @endfor
