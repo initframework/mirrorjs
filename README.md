@@ -1,2 +1,2 @@
-# mirror.js
+# mirrorjs
 💎 The Reflective JavaScript Framework
