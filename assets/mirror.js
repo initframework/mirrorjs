@@ -334,6 +334,8 @@ let parser = {
                parsedDoc.push(`</mirror>`);
                // remove the current loop
                loop_index_stack.pop();
+               // nullify the loop index
+               loop_index = null;
             }
 
             // close cond
@@ -367,35 +369,80 @@ let parser = {
                   _attrName = _attr[0].trim().replace(":", "");
                   // get the attribute value
                   _attrValue = _attr[1].trim();
-                  _attrValue = _attrValue.slice(1, _attrValue.length - 1);
-                  // for multiple attibute values, we'd separate with comma
-                  _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
+                  
+                  // make attributes values independent
+
+                  // set the expression attribute type and generate an index for this attribute 
+                  type = loop_index != null ? "loop-expr-attr" : "expr-attr" , index = generator.__hash();
+
+                  // match every expression in it
+                  while (inner_match = expr_regex.exec(_attrValue)) {
+
+                     // remove the double curly braces
+                     matchNoCurls = inner_match[0].toString().replace(/([{]{2}|[}]{2})/gi, "");
+
+                     // regex wahalas = .,+,*,$,(,),[,]
+                     let regex = matchNoCurls;
+                     // replace .
+                     regex = regex.replace(/\.+/gi, "\\.");
+                     regex = regex.replace(/\++/gi, "\\+");
+                     regex = regex.replace(/\*+/gi, "\\*");
+                     // replace $
+                     regex = regex.replace(/\(+/gi, "\\(");
+                     regex = regex.replace(/\)+/gi, "\\)");
+                     regex = regex.replace(/\[+/gi, "\\[");
+                     regex = regex.replace(/\]+/gi, "\\]");
+                     regex = regex.replace(/\$+/gi, "[$]");
+                     matchNoCurlsRegex = new RegExp(regex+'*', "gi");
+                     // console.log(matchNoCurlsRegex);
+
+                     // matchNoCurlsRegex = new RegExp(matchNoCurls.replace(/[(]+/gi, "[(]").replace(/[)]+/gi, "[)]").replace(/[$]+/gi, "[$]")+'*', "gi");
+
+                     // set its own action
+                     action = 
+                     `const attr = document.querySelectorAll('#body [${index}]')[0]; if (attr != null) { attr.${_attrName} = attr.${_attrName}.replace(${matchNoCurlsRegex}, ${matchNoCurls}); console.log(attr); } `;
+
+                  }
+                  
+
                   // remove the double curly braces
                   _attrValue = _attrValue.replace(/([{]{2}|[}]{2})/gi, "");
+                  // register expression as a watcher
+                  watcher.__register(index,type,action);
+                  // replace match with index
+                  _attrDoc = `${_attrName}=${_attrValue} ${index}`;
+                  line = line.replace(match[0], _attrDoc);
+                  // console.log(line);
 
-                  // consider outer loop
+                  // _attrValue = _attrValue.slice(1, _attrValue.length - 1);
+                  // // for multiple attibute values, we'd separate with comma
+                  // _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
+
+                  // Is it loop dependent? consider outer loop
                   if (loop_index != null) {
-                     // set watcher attributes
-                     type = "loop-expr-attr", index = generator.__hash();
-                     action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
-                     // register expression as a watcher
-                     watcher.__register(index,type,action);
-                     // replace match with index
-                     _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
-                     line = line.replace(match[0], _attrDoc);
+                     // // set watcher attributes
+                     // type = "loop-expr-attr", index = generator.__hash();
+                     // action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
+                     // // register expression as a watcher
+                     // watcher.__register(index,type,action);
+                     // // replace match with index
+                     // _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
+                     // line = line.replace(match[0], _attrDoc);
+                     // // console.log(line);
                      // register this watcher index as a child to parent loop
                      watcher.__addChildren(loop_index, index);
-                  } else {
-                     // use the attribute name to form the action
-                     // add an index to the element
-                     index = generator.__hash(); type = "expr-attr"
-                     action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
-                     // register expression as a watcher
-                     watcher.__register(index,type,action);
-                     // replace match with index
-                     _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
-                     line = line.replace(match[0], _attrDoc);
-                  }
+                  } 
+                  // else {
+                  //    // use the attribute name to form the action
+                  //    // add an index to the element
+                  //    index = generator.__hash(); type = "expr-attr"
+                  //    action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
+                  //    // register expression as a watcher
+                  //    watcher.__register(index,type,action);
+                  //    // replace match with index
+                  //    _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
+                  //    line = line.replace(match[0], _attrDoc);
+                  // }
 
                }
 
@@ -608,8 +655,9 @@ let reflector = {
             if (watcher.type == "loop-expr-tag" || watcher.type == "loop-expr-attr") {
                
                let realIndex = watcher.index;
-               console.log(realIndex);
+               // console.log(realIndex);
                // loop through all instances of the index
+               // console.log(_loop_watcher[realIndex]);
                (_loop_watcher[realIndex]).forEach(loop_index => {
                   let action = watcher.action;
                   // create regex for matching the id in the action
@@ -618,7 +666,7 @@ let reflector = {
                   action = action.replace(indexRegex, loop_index.index);
                   // replace the old needle with a new one
 
-                  console.log(action);
+                  // console.log(action);
                   // consider that the action might be a loop index expression
                   if (loop_index.expectKey == true) {
                      action = action.replace(loop_index.needleRegex, loop_index.needle).replace(loop_index.loopIndexRegex, loop_index.loopIndex);
@@ -635,8 +683,10 @@ let reflector = {
             // expressions
             if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
                // console.log("expr", watcher.action);
+               // console.log(watcher.action);
                evaluator.__execute(watcher.action);
             }
+
          }
       }
    },

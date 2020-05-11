@@ -36,13 +36,6 @@
       </div>
       
       <div class="my-2 rounded border p-3">
-         <h5>Interpolation</h5>
-         <p>
-            Hi, I am {{ $name }}, and I started coding at age {{ $age - $codingForHowLong }}, It's cool because it's just been {{ $codingForHowLong }} years now. lol. :)
-         </p>
-      </div>
-
-      <div class="my-2 rounded border p-3">
          <h5>Interpolation in HTML Attributes</h5>
          <p :title="{{$name}}">
             Hover around me to see my name. lol. :)
@@ -69,6 +62,22 @@
       </div>
 
       <div class="my-2 rounded border p-3">
+         <h5>Interpolation</h5>
+         <p>
+            Hi, I am {{ $name }}, and I started coding at age {{ $age - $codingForHowLong }}, It's cool because it's just been {{ $codingForHowLong }} years now. lol. :)
+         </p>
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>List Rendering with Objects</h5>
+         @for ($odini in $odinis)
+         <p>
+            I am {{ $odini.name }}, and I am {{ $odini.age }} years old.
+         </p>
+         @endfor
+      </div>
+
+      <div class="my-2 rounded border p-3">
          <h5>List Rendering with Arrays</h5>
          @for ($name in $names)
 
@@ -78,10 +87,20 @@
       </div>
 
       <div class="my-2 rounded border p-3">
+         <h5>Conditional Rendering</h5>
+         @if ($age > 18)
+         <p>
+            {{ $name }} is an adult. lol. :)
+         </p>
+         @endif
+         Well, that's because He's above 18.
+      </div>
+
+      <div class="my-2 rounded border p-3">
          <h5>Indexing in List Rendering</h5>
          @for ($index, $name in $names)
 
-            <p :title="{{'I am the',($index + 1),'element'}}">{{ $index + 1 }}) Hello {{ $name }} {{ $name + 's' }} </p>
+            <p :title="I am the {{ ($index + 1)}}th element.">{{ $index + 1 }}) Hello {{ $name }}, do you know {{ $current }}? </p>
 
          @endfor
       </div>
