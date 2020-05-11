@@ -71,9 +71,18 @@
       <div class="my-2 rounded border p-3">
          <h5>List Rendering with Arrays</h5>
          @for ($name in $names)
-         <p>
-            Hello {{ $name }}
-         </p>
+
+            <p> Hello {{ $name }} </p>
+
+         @endfor
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>Indexing in List Rendering</h5>
+         @for ($index, $name in $names)
+
+            <p :title="{{'I am the',($index + 1),'element'}}">{{ $index + 1 }}) Hello {{ $name }} {{ $name + 's' }} </p>
+
          @endfor
       </div>
 
