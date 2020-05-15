@@ -16,11 +16,14 @@
       $names = ["Alex","Anabelle","James","Queen", "Cleave"];
       $name = "Ebuka Odini";
       $age = 22; $codingForHowLong = 4;
+      $toggle = true;
    @@vars
 
    <div class="container border rounded bg-light my-5 mx-auto p-5 text-dark">
 
       <h3 style="text-decoration: underline;">So Far with Mirror.js</h3>
+
+      <h5>I love this bread, {{ bread }}.</h5>
 
       <div class="my-2 rounded border p-3">
          <h5>Variable declaration</h5>
@@ -35,6 +38,13 @@
          </p>
       </div>
       
+      <div class="my-2 rounded border p-3">
+         <h5>Interpolation</h5>
+         <p>
+            Hi, I am {{ $name }}, and I started coding at age {{ $age - $codingForHowLong }}, It's cool because it's just been {{ $codingForHowLong }} years now. lol. :)
+         </p>
+      </div>
+
       <div class="my-2 rounded border p-3">
          <h5>Interpolation in HTML Attributes</h5>
          <p :title="{{$name}}">
@@ -53,31 +63,6 @@
       </div>
 
       <div class="my-2 rounded border p-3">
-         <h5>List Rendering with Objects</h5>
-         @for ($odini in $odinis)
-         <p>
-            I am {{ $odini.name }}, and I am {{ $odini.age }} years old.
-         </p>
-         @endfor
-      </div>
-
-      <div class="my-2 rounded border p-3">
-         <h5>Interpolation</h5>
-         <p>
-            Hi, I am {{ $name }}, and I started coding at age {{ $age - $codingForHowLong }}, It's cool because it's just been {{ $codingForHowLong }} years now. lol. :)
-         </p>
-      </div>
-
-      <div class="my-2 rounded border p-3">
-         <h5>List Rendering with Objects</h5>
-         @for ($odini in $odinis)
-         <p>
-            I am {{ $odini.name }}, and I am {{ $odini.age }} years old.
-         </p>
-         @endfor
-      </div>
-
-      <div class="my-2 rounded border p-3">
          <h5>List Rendering with Arrays</h5>
          @for ($name in $names)
 
@@ -87,13 +72,12 @@
       </div>
 
       <div class="my-2 rounded border p-3">
-         <h5>Conditional Rendering</h5>
-         @if ($age > 18)
+         <h5>List Rendering with Objects</h5>
+         @for ($odini in $odinis)
          <p>
-            {{ $name }} is an adult. lol. :)
+            I am {{ $odini.name }}, and I am {{ $odini.age }} years old.
          </p>
-         @endif
-         Well, that's because He's above 18.
+         @endfor
       </div>
 
       <div class="my-2 rounded border p-3">
@@ -117,6 +101,24 @@
             @if ($odini.age > 18)
             <p>
                {{ $odini.name }} is an Adult, because he is above 18. lol. 💪🏽
+            </p>
+            @endif
+         @endfor
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>Detect Changes and Reflect</h5>
+
+         @for ($odini in $odinis)
+            {{ $odini.name }}
+            @if ($toggle == true)
+            <p>
+               Toggle is set to true.
+            </p>
+            @endif
+            @if ($toggle == false)
+            <p>
+               Toggle is set to false.
             </p>
             @endif
          @endfor

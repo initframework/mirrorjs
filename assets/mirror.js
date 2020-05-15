@@ -20,7 +20,7 @@ let mirror = {
       // parse the document
       // and extract variables, directives and expressions
       const parsedDoc = parser.__parse(bodyTxt);
-      _bodyState.push(parsedDoc);
+      _bodyStates.push(parsedDoc);
       // console.log(parsedDoc);
 
       // the document body can now replace the original body
@@ -44,13 +44,21 @@ let mirror = {
 
    },
 
+   // reflect changes
+   reflect: function() {
+
+      // call the spy method to see variables whose values have changed
+      spy.__find();
+
+   }
+
 }
 
-let _bodyState = [];
-let _variable_watcher = {};
-let _watcher = {};
-let _variable = [];
-let _loop_watcher = {};
+let _bodyStates = [];
+let _variable_watchers = {};
+let _watchers = {};
+let _variables = [];
+let _loop_watchers = {};
 
 let variable = {
 
@@ -66,6 +74,8 @@ let variable = {
       let var_regex = /[$]{1}(.)+/gi
       // regex for matching strings
       let str_regex = /[('|")]{1}(.)+[('|")]{1}/gi
+      // regex for matching booleans
+      let bool_regex = /[(true|false)]/gi
 
       // NOTE: the value of the variable could be an empty
       if (value == "") {
@@ -87,13 +97,18 @@ let variable = {
          _value = value.replace(/['"]/gi, "").toString();
       }
 
+      // NOTE: the value of the variable could be a boolean
+      else if (bool_regex.test(value)) {
+         _value = Boolean(value);
+      }
+
       // NOTE: the value of the variable could be an integer
       else {
-         _value = Number(value)
+         _value = Number(value);
       }
 
       // find out if the variable has been registered before
-      if (!_variable.includes(name)) {
+      if (!_variables.includes(name)) {
          // make the variable globally avilable
          window[name] = _value;
          this.__register(name);
@@ -105,32 +120,32 @@ let variable = {
 
    __register: function(name) {
       // find out if the variable has been registered before
-      if (!_variable.includes(name)) {
+      if (!_variables.includes(name)) {
          // register the variable
-         _variable.push(name);
+         _variables.push(name);
          // register the variable to match a watcher
-         _variable_watcher[name] = [];
+         _variable_watchers[name] = [];
       }
    },
 
    __addWatchersToVariables: function() {
       // for every registered watcher
       // TODO: optimize this process later with memoization
-      for (const property in _watcher) {
-         if (_watcher.hasOwnProperty(property)) {
+      for (const property in _watchers) {
+         if (_watchers.hasOwnProperty(property)) {
             // the watcher
-            const watcher = _watcher[property];
+            const watcher = _watchers[property];
             // hold its properties
             const index = watcher.index, action = watcher.action;
             // now iterate over every registered variable
-            _variable.forEach(variable => {
+            _variables.forEach(variable => {
                // using regex
                let pattern = variable.replace(/[$]/g,"[$]")+"(?![a-zA-Z0-9_])";
                let regex = new RegExp(pattern);
                // find out if the variable is referenced in the action of the watcher
                if (regex.test(action)) {
                   // add the index of the watcher to the variable watcher
-                  _variable_watcher[variable].push(index);
+                  _variable_watchers[variable].push(index);
                }
             });
          }
@@ -142,7 +157,7 @@ let variable = {
 let watcher = {
 
    __register: function(index,type,action) {
-      _watcher[index] = {
+      _watchers[index] = {
          index: index,
          type: type,
          action: action,
@@ -152,9 +167,9 @@ let watcher = {
    },
 
    __addChildren: function(parent, child) {
-      if (_watcher.hasOwnProperty(parent)) {
+      if (_watchers.hasOwnProperty(parent)) {
          // register as a child watcher to this loop node
-         const watcher = _watcher[parent];
+         const watcher = _watchers[parent];
          watcher.children.push(child);
       }
    },
@@ -162,19 +177,19 @@ let watcher = {
    // temporary stack
    __registerLoopWatcher: function(elemIndex, newElemIndex, needleRegex, needle, expectingLoopIndex = false, loopIndexRegex = null, loopIndex = null) {
       // if not in array, create array and push; else push.
-      if (!_loop_watcher.hasOwnProperty(elemIndex)) {
-         _loop_watcher[elemIndex] = [];
-         _loop_watcher[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle, expectKey: expectingLoopIndex, loopIndexRegex: loopIndexRegex, loopIndex: loopIndex });
+      if (!_loop_watchers.hasOwnProperty(elemIndex)) {
+         _loop_watchers[elemIndex] = [];
+         _loop_watchers[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle, expectKey: expectingLoopIndex, loopIndexRegex: loopIndexRegex, loopIndex: loopIndex });
       } else {
-         _loop_watcher[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle, expectKey: expectingLoopIndex, loopIndexRegex: loopIndexRegex, loopIndex: loopIndex });
+         _loop_watchers[elemIndex].push({index: newElemIndex, needleRegex: needleRegex, needle: needle, expectKey: expectingLoopIndex, loopIndexRegex: loopIndexRegex, loopIndex: loopIndex });
       }
    },
 
    __registerContents: function() {
       // for each registered watcher
-      for (const property in _watcher) {
-         if (_watcher.hasOwnProperty(property)) {
-            const watcher = _watcher[property];
+      for (const property in _watchers) {
+         if (_watchers.hasOwnProperty(property)) {
+            const watcher = _watchers[property];
             // register its content if its type is a cond or a loop
             if (watcher.type == "cond" || watcher.type == "loop" || watcher.type == "loop-in" || watcher.type == "loop-of") {
                watcher.content = document.getElementById(watcher.index).innerHTML
@@ -182,7 +197,6 @@ let watcher = {
          }
       }
    },
-
 
 }
 
@@ -219,13 +233,13 @@ let parser = {
                // hence, last element of array is discarded i.e after the last declared variable
                _variables = _variables.slice(0, _variables.length - 1);
                // loop through all
-               _variables.forEach(_variable => {
+               _variables.forEach(_variables => {
                   // break the string on equal to (=)
-                  _variable = _variable.split("=");
+                  _variables = _variables.split("=");
                   // get the variable name
-                  let _variableName = _variable[0].trim(); // is this sa valid variable name
+                  let _variableName = _variables[0].trim(); // is this sa valid variable name
                   // replace any semi-colon, quote and double-quote
-                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
+                  let _variableValue = _variables[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
                   // set the variable as an mjs variable
                   variable.__set(_variableName,_variableValue);
                });
@@ -255,14 +269,14 @@ let parser = {
                // hence, last element of array is discarded i.e after the last declared variable
                _variables = _variables.slice(0, _variables.length - 1);
                // loop through all
-               _variables.forEach(_variable => {
+               _variables.forEach(_variables => {
                   // break the string on equal to (=)
-                  _variable = _variable.split("=");
+                  _variables = _variables.split("=");
                   // get the variable name
-                  let _variableName = _variable[0].trim(); // is this sa valid variable name
+                  let _variableName = _variables[0].trim(); // is this sa valid variable name
                   // replace any semi-colon, quote and double-quote
                   // BUG: it is trimming out values improperly
-                  let _variableValue = _variable[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object
+                  let _variableValue = _variables[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object
                   // set the variable as an mjs variable
                   variable.__set(_variableName,_variableValue);
                });
@@ -400,7 +414,7 @@ let parser = {
 
                      // set its own action
                      action = 
-                     `const attr = document.querySelectorAll('#body [${index}]')[0]; if (attr != null) { attr.${_attrName} = attr.${_attrName}.replace(${matchNoCurlsRegex}, ${matchNoCurls}); console.log(attr); } `;
+                     `const attr = document.querySelectorAll('#body [${index}]')[0]; if (attr != null) { attr.${_attrName} = attr.${_attrName}.replace(${matchNoCurlsRegex}, ${matchNoCurls}); } `;
 
                   }
                   
@@ -522,10 +536,10 @@ let reflector = {
 
    __setupReflect: function() {
       // for each watcher
-      for (const property in _watcher) {
+      for (const property in _watchers) {
 
-         if (_watcher.hasOwnProperty(property)) {
-            const watcher = _watcher[property];
+         if (_watchers.hasOwnProperty(property)) {
+            const watcher = _watchers[property];
             
             // loops
             if (watcher.type == "loop") {
@@ -575,9 +589,9 @@ let reflector = {
                      
                      // re-index the watcher
                      // get all children of the loop watcher
-                     if (_watcher['${watcher.index}'].children != []) {
+                     if (_watchers['${watcher.index}'].children != []) {
                         // can we use memoization here for eficiency sake
-                        (_watcher['${watcher.index}'].children).forEach(index => {
+                        (_watchers['${watcher.index}'].children).forEach(index => {
                            
                            // create regex for matching the id
                            let indexRegex = new RegExp(index,"gi");
@@ -621,7 +635,7 @@ let reflector = {
                let realIndex = watcher.index;
                // console.log(realIndex);
                // loop through all instances of the index
-               (_loop_watcher[realIndex]).forEach(loop_index => {
+               (_loop_watchers[realIndex]).forEach(loop_index => {
                   let action = watcher.action;
                   // console.log(action);
                   // create regex for matching the id in the action
@@ -657,8 +671,8 @@ let reflector = {
                let realIndex = watcher.index;
                // console.log(realIndex);
                // loop through all instances of the index
-               // console.log(_loop_watcher[realIndex]);
-               (_loop_watcher[realIndex]).forEach(loop_index => {
+               // console.log(_loop_watchers[realIndex]);
+               (_loop_watchers[realIndex]).forEach(loop_index => {
                   let action = watcher.action;
                   // create regex for matching the id in the action
                   let indexRegex = new RegExp(realIndex,"gi");
@@ -673,7 +687,7 @@ let reflector = {
                   } else {
                      action = action.replace(loop_index.needleRegex, loop_index.needle);
                   }
-                  console.log(action);
+                  // console.log(action);
                   // evaluate the new action
                   evaluator.__execute(action);
                });
@@ -723,5 +737,14 @@ let generator = {
 }
 
 let spy = {
+
+   // find changes
+   __find: function() {
+
+      _variables.forEach(element => {
+         console.log(element)
+      });
+
+   }
 
 }
