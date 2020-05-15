@@ -124,15 +124,14 @@
       <div class="my-2 rounded border p-3">
          <h5>Data Modelling</h5>
 
-         <input type="text" :value="{{ $name }}" onclick="alert('hola');" onchange="console.log('value: ');">
-         <br>
-         <p>{{ $name }}</p>
-
+         <p>My name is {{ $name }}</p>
+         <input type="text" onkeyup="$name = this.value; mirror.reflect();" :value="{{ $name }}">
+      
       </div>
 
       <div class="my-2 rounded border p-3">
          <h5>Coming Soon...</h5>
-         <p>Data Modelling</p>
+         <p>Data Modelling ✔</p>
          <p>State Management</p>
          <p>Single Paged Applications & Routing</p>
          <p>:)</p>

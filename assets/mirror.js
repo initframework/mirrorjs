@@ -938,6 +938,8 @@ let spy = {
 
       });
 
+      _spy_variables.splice(0, 1);
+
    },
 
    __trigger: function(watchers) {
