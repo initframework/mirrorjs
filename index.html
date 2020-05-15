@@ -109,19 +109,25 @@
       <div class="my-2 rounded border p-3">
          <h5>Detect Changes and Reflect</h5>
 
-         @for ($odini in $odinis)
-            {{ $odini.name }}
-            @if ($toggle == true)
-            <p>
-               Toggle is set to true.
-            </p>
-            @endif
-            @if ($toggle == false)
-            <p>
-               Toggle is set to false.
-            </p>
-            @endif
-         @endfor
+         @if ($toggle)
+         <p>Toggle is On.</p>
+         @endif
+
+         @if (!$toggle)
+         <p>Toggle is Off.</p>
+         @endif
+
+         <button onclick="$toggle = !$toggle; mirror.reflect();">Toggle On</button>
+
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>Data Modelling</h5>
+
+         <input type="text" :value="{{ $name }}" onclick="alert('hola');" onchange="console.log('value: ');">
+         <br>
+         <p>{{ $name }}</p>
+
       </div>
 
       <div class="my-2 rounded border p-3">

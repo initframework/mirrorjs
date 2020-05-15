@@ -36,7 +36,10 @@ let mirror = {
 
       // now lets run the first render
       // let's start with expressions
-      reflector.__setupReflect()
+      reflector.__setupReflect();
+
+      // hold the current variable states in the spy
+      spy.__store();
 
       // read the documentbody as node object
       // const bodyObj = parser.__readfileAsNode();
@@ -46,9 +49,12 @@ let mirror = {
 
    // reflect changes
    reflect: function() {
+      
+      // hold the current state
+      spy.__store();
 
       // call the spy method to see variables whose values have changed
-      spy.__find();
+      spy.__compare();
 
    }
 
@@ -705,7 +711,169 @@ let reflector = {
       }
    },
 
-   __reflect: function(index, type, action) {
+   __reflect: function(watcher) {
+
+      watcher = _watchers[watcher];
+      
+      // loops
+      if (watcher.type == "loop") {
+         // TODO: optimize this with memoization
+         // store an id to indicate if the real action has been saved in the watcher as a new property
+         
+         // clear the inner elements
+         let el = document.getElementById(watcher.index)
+         el.innerHTML = "";
+         // form the main action to populate the el' children
+         // break the separator to extract the used variable name
+         let action = watcher.action.split(" in ");
+         // let cnt = watcher.content;
+
+         // some iterations want to get the index too
+         // this is indicated with the index variable with a comma before the needle variable
+         let index_needle = action[0].trim();
+         // if it needs an index
+         let index_needle_break = index_needle;
+         let loop_index = needle = null;
+         if ( index_needle_break.toString().search(",") != -1) {
+            index_needle_break = index_needle_break.split(",")
+            loop_index = index_needle_break[0].trim();
+            needle = index_needle_break[1].trim();
+         } else {
+            needle = index_needle_break.trim();
+         }
+         let haystack = action[1].trim();
+         // ((?! )(?!<)(?!>).)
+         // needle regex
+         let needleRegex = new RegExp(needle.replace(/[$]+/gi, "[$]")+'*',"gi");
+         // loop index regex
+         let loopIndexRegex = loop_index == null ? null : new RegExp(loop_index.replace(/[$]+/gi, "[$]")+'*',"gi");
+         let loop_index_req = loop_index == null ? false : true ;
+
+         // console.log(loopIndexRegex, loop_index);
+         // console.log(needleRegex);
+         action = 
+         `var count = 0;
+         for (const key in ${haystack}) { 
+            if (${haystack}.hasOwnProperty(key)) {
+               let cnt = \`${watcher.content}\`; 
+               let re = ${needleRegex};
+               let loop_index = key;
+               let loop_index_req = ${loop_index_req};
+               let loopIndexRegex = ${loopIndexRegex};
+               
+               // re-index the watcher
+               // get all children of the loop watcher
+               if (_watchers['${watcher.index}'].children != []) {
+                  // can we use memoization here for eficiency sake
+                  (_watchers['${watcher.index}'].children).forEach(index => {
+                     
+                     // create regex for matching the id
+                     let indexRegex = new RegExp(index,"gi");
+                     
+                     // register a new watcher index for the watcher
+                     let newIndex = index + count;
+
+                     // If the action is expecting to use the loop index key
+                     if (loop_index_req == true) {
+                        watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']', true, loopIndexRegex, loop_index);
+                     } else {
+                        watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
+                     }
+
+                     // loop indexes being expected are to be considered here too, they must have been interpolated
+                     // if the loopIndexRegex matches the expected loop index
+                     // console.log(index, loopIndexRegex, loop_index, re);
+
+                     // renew the id for the html
+                     cnt = cnt.replace(indexRegex, newIndex);
+
+                  });
+               }
+               
+               // make the expression executable
+               cnt = cnt.replace(re, '${haystack}'+'['+count+']');
+               document.getElementById('${watcher.index}').innerHTML += cnt;
+               // console.log(cnt);
+               // increment counter
+               count++;
+            }
+         }`;
+         // console.log(action);
+         // action = `for (let ${needle} in ${haystack}) { let cnt = \`${watcher.content}\`; cnt = cnt.replace(${needleRegex}, ${Object.assign({}, needle)}); document.getElementById('${watcher.index}').innerHTML += cnt }`;
+         // console.log("loop", action);
+         evaluator.__execute(action);
+      }
+
+      // loop dependent conditions
+      if (watcher.type == "loop-cond") {
+         let realIndex = watcher.index;
+         // console.log(realIndex);
+         // loop through all instances of the index
+         (_loop_watchers[realIndex]).forEach(loop_index => {
+            let action = watcher.action;
+            // console.log(action);
+            // create regex for matching the id in the action
+            let indexRegex = new RegExp(realIndex,"gi");
+            // console.log(indexRegex);
+            // renew the id in the action stmt
+            action = action.replace(indexRegex, loop_index.index);
+            // console.log(action);
+            // replace the old needle with a new one
+            action = action.replace(loop_index.needleRegex, loop_index.needle);
+            // console.log(action);
+            // html coverts > to &gt; and < to &lt;
+            // so let's reverse it
+            action = action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
+            // console.log(action);
+            // evaluate the new action
+            evaluator.__execute(action);
+         });
+      }
+
+      // execute conditions
+      if (watcher.type == "cond") {
+         // console.log("cond", watcher.action);
+         // html coverts > to &gt; and < to &lt;
+         // so let's reverse it
+         let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
+         evaluator.__execute(action);
+      }
+
+      // loop dependent expressions
+      if (watcher.type == "loop-expr-tag" || watcher.type == "loop-expr-attr") {
+         
+         let realIndex = watcher.index;
+         // console.log(realIndex);
+         // loop through all instances of the index
+         // console.log(_loop_watchers[realIndex]);
+         (_loop_watchers[realIndex]).forEach(loop_index => {
+            let action = watcher.action;
+            // create regex for matching the id in the action
+            let indexRegex = new RegExp(realIndex,"gi");
+            // renew the id in the action stmt
+            action = action.replace(indexRegex, loop_index.index);
+            // replace the old needle with a new one
+
+            // console.log(action);
+            // consider that the action might be a loop index expression
+            if (loop_index.expectKey == true) {
+               action = action.replace(loop_index.needleRegex, loop_index.needle).replace(loop_index.loopIndexRegex, loop_index.loopIndex);
+            } else {
+               action = action.replace(loop_index.needleRegex, loop_index.needle);
+            }
+            // console.log(action);
+            // evaluate the new action
+            evaluator.__execute(action);
+         });
+         // loop_index_stack.pop();
+      }
+
+      // expressions
+      if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
+         // console.log("expr", watcher.action);
+         // console.log(watcher.action);
+         evaluator.__execute(watcher.action);
+      }
 
    }
 
@@ -736,13 +904,47 @@ let generator = {
 
 }
 
+let _spy_variables = [];
+
 let spy = {
 
    // find changes
-   __find: function() {
+   __store: function() {
+      let _var = {};
+      _variables.forEach(variable => {
+         _var[variable] = evaluator.__execute(`return ${variable};`);
+      });
 
-      _variables.forEach(element => {
-         console.log(element)
+      _spy_variables.push(_var);
+
+   },
+
+   __compare: function() {
+
+      // compare the current state and the previous
+      let current = _spy_variables[_spy_variables.length - 1];
+      let prev = _spy_variables[_spy_variables.length - 2];
+
+      _variables.forEach(variable => {
+         
+         if (prev[variable] != current[variable]) {
+            // this variable changed
+            // get its watchers
+            let watchers = _variable_watchers[variable];
+
+            // trigger its watchers
+            this.__trigger(watchers);
+         }
+
+      });
+
+   },
+
+   __trigger: function(watchers) {
+
+      // trigger the reflector on these watchers
+      watchers.forEach(watcher => {
+         reflector.__reflect(watcher);
       });
 
    }
