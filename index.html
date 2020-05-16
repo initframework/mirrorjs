@@ -23,8 +23,6 @@
 
       <h3 style="text-decoration: underline;">So Far with Mirror.js</h3>
 
-      <h5>I love this bread, {{ $bread }}.</h5>
-
       <div class="my-2 rounded border p-3">
          <h5>Variable declaration</h5>
          <p>
@@ -130,15 +128,6 @@
       </div>
 
       <div class="my-2 rounded border p-3">
-         <h5>Your local javascript variables</h5>
-
-         <p>Original value: {{ $bread }}</p>
-
-         <input type="text" onkeyup="$bread = this.value; mirror.reflect();" :value="{{ $bread }}">
-      
-      </div>
-
-      <div class="my-2 rounded border p-3">
          <h5>Let's do Math</h5>
 
          @var $val1 = 5; $val2 = 10;
@@ -152,7 +141,7 @@
       <div class="my-2 rounded border p-3">
          <h5>A Simple ToDo</h5>
 
-         @var $tasks = ["Eat breakfast"];
+         @var $tasks = ["Eat breakfast"]; $bg = "btn";
 
          <!-- the list -->
          @if ($tasks.length == 0)
@@ -161,15 +150,24 @@
 
          @if ($tasks.length > 0)
             @for ($index, $task in $tasks)
-               <li> 
+               <li class="my-1"> 
                   {{ $task }}
+                  <button onclick="removeTask(this.id);" :id="{{$index}}" class="btn btn-sm mx-2 btn-dark">Remove</button>
                </li>
             @endfor
          @endif
 
+         <script>
+            function removeTask(id) {
+               // console.log(id);
+               $tasks.splice(id, 1);
+               _.reflect();
+            }
+         </script>
+
          <br>
          <input id="newtask" type="text" value="">
-         <button onclick="$tasks.push(document.getElementById('newtask').value); mirror.reflect();">Add</button>
+         <button onclick="$tasks.push(document.getElementById('newtask').value); document.getElementById('newtask').value = ''; mirror.reflect();">Add</button>
       
       </div>
 

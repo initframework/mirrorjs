@@ -50,7 +50,7 @@ let mirror = {
    // reflect changes
    reflect: function() {
 
-      console.log("detecting changes...");
+      // console.log("detecting changes...");
       
       // hold the current state
       __spy.__store();
@@ -62,6 +62,7 @@ let mirror = {
 
    // set variables from js
    set: function(variable, value = null) {
+      console.log(value);
       __variable.__set(variable, value);
    }
 
@@ -372,8 +373,9 @@ let __parser = {
                // a basic expression
                let expr_regex = /[{]{2}((?![{]{2})(?![}]{2}).)+[}]{2}/gi
 
-               // an expression in an attribute
-               let attr_expr_regex = /(:[a-z-]+=)(")((?![:]{1}[a-z]+).)+(")/gi
+               // an expression in an attribute ((?![:]{1}[a-z]+).)
+               let attr_expr_regex = /(:[a-z-]+(=")((?!=).)+("))/gi
+               // let attr_expr_regex = /(:[a-z-]+=)(")((?![:]{1}[a-z]+).)+(")/gi
 
                // variables to be used for expressions
                let _expr = _attr = null;
@@ -382,12 +384,14 @@ let __parser = {
                // match an expression in an attribute
                while (match = attr_expr_regex.exec(line))
                {
+                  // console.log(match[0]);
                   // get the expression
                   _attr = match[0];
                   // break the match to get the attribute and its value
                   _attr = _attr.split("=");
                   // get the attribute name and remove the colon(:)
                   _attrName = _attr[0].trim().replace(":", "");
+                  // console.log(line);
                   // get the attribute value
                   _attrValue = _attr[1].trim();
                   
@@ -431,7 +435,7 @@ let __parser = {
                   // register expression as a watcher
                   __watcher.__register(index,type,action);
                   // replace match with index
-                  _attrDoc = `${_attrName}=${_attrValue} ${index}`;
+                  _attrDoc = `${index}="" ${_attrName}=${_attrValue}`;
                   line = line.replace(match[0], _attrDoc);
                   // console.log(line);
 
@@ -901,7 +905,7 @@ let __spy = {
    },
 
    __compare: function() {
-      console.log("comapring states...");
+      // console.log("comapring states...");
 
       // compare the current state and the previous
       let current = _spy_variables[_spy_variables.length - 1];
@@ -913,10 +917,8 @@ let __spy = {
          if (prev[variable] != current[variable]) {
             // this variable changed
             // get its watchers
-            console.log(variable + " changed");
+            // console.log(variable + " changed");
             let watchers = _variable_watchers[variable];
-
-            console.log(watchers);
 
             // trigger its watchers
             this.__trigger(watchers);
