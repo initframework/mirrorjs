@@ -23,7 +23,7 @@
 
       <h3 style="text-decoration: underline;">So Far with Mirror.js</h3>
 
-      <h5>I love this bread, {{ bread }}.</h5>
+      <h5>I love this bread, {{ $bread }}.</h5>
 
       <div class="my-2 rounded border p-3">
          <h5>Variable declaration</h5>
@@ -117,7 +117,7 @@
          <p>Toggle is Off.</p>
          @endif
 
-         <button onclick="$toggle = !$toggle; mirror.reflect();">Toggle On</button>
+         <button onclick="$toggle = !$toggle; mirror.reflect();">Toggle</button>
 
       </div>
 
@@ -126,6 +126,50 @@
 
          <p>My name is {{ $name }}</p>
          <input type="text" onkeyup="$name = this.value; mirror.reflect();" :value="{{ $name }}">
+      
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>Your local javascript variables</h5>
+
+         <p>Original value: {{ $bread }}</p>
+
+         <input type="text" onkeyup="$bread = this.value; mirror.reflect();" :value="{{ $bread }}">
+      
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>Let's do Math</h5>
+
+         @var $val1 = 5; $val2 = 10;
+
+         <input type="num" onkeyup="$val1 = this.value; mirror.reflect();" :value="{{ $val1 }}"> - 
+         <input type="num" onkeyup="$val2 = this.value; mirror.reflect();" :value="{{ $val2 }}"> = 
+         {{ parseInt($val1) - parseInt($val2) }}
+      
+      </div>
+
+      <div class="my-2 rounded border p-3">
+         <h5>A Simple ToDo</h5>
+
+         @var $tasks = ["Eat breakfast"];
+
+         <!-- the list -->
+         @if ($tasks.length == 0)
+            <p>Add your first task</p>
+         @endif
+
+         @if ($tasks.length > 0)
+            @for ($index, $task in $tasks)
+               <li> 
+                  {{ $task }}
+               </li>
+            @endfor
+         @endif
+
+         <br>
+         <input id="newtask" type="text" value="">
+         <button onclick="$tasks.push(document.getElementById('newtask').value); mirror.reflect();">Add</button>
       
       </div>
 

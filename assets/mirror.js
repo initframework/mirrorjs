@@ -14,12 +14,12 @@ let mirror = {
    setup: function() {
 
       // read the document body as text array
-      const bodyTxt = parser.__readfileAsText()
+      const bodyTxt = __parser.__readfileAsText()
       // console.log(bodyTxt);
 
       // parse the document
       // and extract variables, directives and expressions
-      const parsedDoc = parser.__parse(bodyTxt);
+      const parsedDoc = __parser.__parse(bodyTxt);
       _bodyStates.push(parsedDoc);
       // console.log(parsedDoc);
 
@@ -29,44 +29,45 @@ let mirror = {
 
       // by now, all variables have been registered as a cause to an effect and watchers too must have been registered
       // so now let's find all watchers on these variables and map them to their variables
-      variable.__addWatchersToVariables();
+      __variable.__addWatchersToVariables();
 
       // now we register the contents of those watchers that are of cond or loop directives
-      watcher.__registerContents();
+      __watcher.__registerContents();
 
       // now lets run the first render
       // let's start with expressions
-      reflector.__setupReflect();
+      __reflector.__setupReflect();
 
       // hold the current variable states in the spy
-      spy.__store();
+      __spy.__store();
 
       // read the documentbody as node object
-      // const bodyObj = parser.__readfileAsNode();
+      // const bodyObj = __parser.__readfileAsNode();
       // console.log(bodyObj);
 
    },
 
    // reflect changes
    reflect: function() {
+
+      console.log("detecting changes...");
       
       // hold the current state
-      spy.__store();
+      __spy.__store();
 
       // call the spy method to see variables whose values have changed
-      spy.__compare();
+      __spy.__compare();
 
+   },
+
+   // set variables from js
+   set: function(variable, value = null) {
+      __variable.__set(variable, value);
    }
 
 }
 
-let _bodyStates = [];
-let _variable_watchers = {};
-let _watchers = {};
-let _variables = [];
-let _loop_watchers = {};
-
-let variable = {
+let __variable = {
 
    __set: function(name, value) {
       
@@ -160,7 +161,7 @@ let variable = {
 
 }
 
-let watcher = {
+let __watcher = {
 
    __register: function(index,type,action) {
       _watchers[index] = {
@@ -206,7 +207,7 @@ let watcher = {
 
 }
 
-let parser = {
+let __parser = {
 
    // parse the document
    // retrieve variables
@@ -247,7 +248,7 @@ let parser = {
                   // replace any semi-colon, quote and double-quote
                   let _variableValue = _variables[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object ***
                   // set the variable as an mjs variable
-                  variable.__set(_variableName,_variableValue);
+                  __variable.__set(_variableName,_variableValue);
                });
             }
 
@@ -284,7 +285,7 @@ let parser = {
                   // BUG: it is trimming out values improperly
                   let _variableValue = _variables[1].trim().replace(/[;]/gi, ""); // this could be another variable or an array or an object
                   // set the variable as an mjs variable
-                  variable.__set(_variableName,_variableValue);
+                  __variable.__set(_variableName,_variableValue);
                });
             }
 
@@ -297,9 +298,9 @@ let parser = {
                // strip out the conditional brackets
                _expr = _expr.replace(/[)(]/gi, ""); // ***
                // set watcher attributes
-               const type = "loop", index = generator.__hash(), action = `${_expr}` ;
+               const type = "loop", index = __generator.__hash(), action = `${_expr}` ;
                // register condition as a watcher
-               watcher.__register(index,type,action);
+               __watcher.__register(index,type,action);
                // make html
                parsedDoc.push(`<mirror id="${index}">`);
                loop_index_stack.push(index);
@@ -319,7 +320,7 @@ let parser = {
                // consider an outer loop
                if (loop_index != null) {
                   // set watcher attributes
-                  const type = "loop-cond", index = generator.__hash(), 
+                  const type = "loop-cond", index = __generator.__hash(), 
                   action = 
                   `if ${_conds} { 
                      document.getElementById('${index}').style.display = 'contents'; 
@@ -327,14 +328,14 @@ let parser = {
                      document.getElementById('${index}').style.display = 'none'; 
                   }` ;
                   // register condition as a watcher
-                  watcher.__register(index,type,action);
+                  __watcher.__register(index,type,action);
                   // make html
-                  parsedDoc.push(`<mirror id="${index}" data-loop="${loop_index}">`);
+                  parsedDoc.push(`<mirror id="${index}">`);
                   // register this watcher index as a child to parent loop
-                  watcher.__addChildren(loop_index, index);
+                  __watcher.__addChildren(loop_index, index);
                } else {
                   // set watcher attributes
-                  const type = "cond", index = generator.__hash(), 
+                  const type = "cond", index = __generator.__hash(), 
                   action = 
                   `if ${_conds} { 
                      document.getElementById('${index}').style.display = 'contents'; 
@@ -342,7 +343,7 @@ let parser = {
                      document.getElementById('${index}').style.display = 'none'; 
                   }` ;
                   // register condition as a watcher
-                  watcher.__register(index,type,action);
+                  __watcher.__register(index,type,action);
                   // make html
                   parsedDoc.push(`<mirror id="${index}">`);
                }
@@ -393,7 +394,7 @@ let parser = {
                   // make attributes values independent
 
                   // set the expression attribute type and generate an index for this attribute 
-                  type = loop_index != null ? "loop-expr-attr" : "expr-attr" , index = generator.__hash();
+                  type = loop_index != null ? "loop-expr-attr" : "expr-attr" , index = __generator.__hash();
 
                   // match every expression in it
                   while (inner_match = expr_regex.exec(_attrValue)) {
@@ -428,42 +429,18 @@ let parser = {
                   // remove the double curly braces
                   _attrValue = _attrValue.replace(/([{]{2}|[}]{2})/gi, "");
                   // register expression as a watcher
-                  watcher.__register(index,type,action);
+                  __watcher.__register(index,type,action);
                   // replace match with index
                   _attrDoc = `${_attrName}=${_attrValue} ${index}`;
                   line = line.replace(match[0], _attrDoc);
                   // console.log(line);
 
-                  // _attrValue = _attrValue.slice(1, _attrValue.length - 1);
-                  // // for multiple attibute values, we'd separate with comma
-                  // _attrValue = _attrValue.replace(/[,]+/gi, "+' '+");
-
                   // Is it loop dependent? consider outer loop
                   if (loop_index != null) {
-                     // // set watcher attributes
-                     // type = "loop-expr-attr", index = generator.__hash();
-                     // action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
-                     // // register expression as a watcher
-                     // watcher.__register(index,type,action);
-                     // // replace match with index
-                     // _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
-                     // line = line.replace(match[0], _attrDoc);
-                     // // console.log(line);
                      // register this watcher index as a child to parent loop
-                     watcher.__addChildren(loop_index, index);
+                     __watcher.__addChildren(loop_index, index);
                   } 
-                  // else {
-                  //    // use the attribute name to form the action
-                  //    // add an index to the element
-                  //    index = generator.__hash(); type = "expr-attr"
-                  //    action = `document.querySelectorAll('#body [${index}]')[0].setAttribute("${_attrName}", ${_attrValue})`;
-                  //    // register expression as a watcher
-                  //    watcher.__register(index,type,action);
-                  //    // replace match with index
-                  //    _attrDoc = `${_attrName}="${_attrValue}" ${index}`;
-                  //    line = line.replace(match[0], _attrDoc);
-                  // }
-
+                  
                }
 
                // match the remaining type of expressions
@@ -476,16 +453,16 @@ let parser = {
                   // consider outer loop
                   if (loop_index != null) {
                      // set watcher attributes
-                     type = "loop-expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
-                     watcher.__register(index,type,action);
+                     type = "loop-expr-tag", index = __generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
+                     __watcher.__register(index,type,action);
                      // replace match with index
-                     line = line.replace(match[0], `<span id="${index}" data-loop="${loop_index}">${_expr}</span>`);
+                     line = line.replace(match[0], `<span id="${index}">${_expr}</span>`);
                      // register this watcher index as a child to parent loop
-                     watcher.__addChildren(loop_index, index);
+                     __watcher.__addChildren(loop_index, index);
                   } else {
                      // set watcher attributes
-                     type = "expr-tag", index = generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
-                     watcher.__register(index,type,action);
+                     type = "expr-tag", index = __generator.__hash(), action = `const el = document.getElementById("${index}"); if (el != null) { el.innerHTML = ${_expr}; }` ;
+                     __watcher.__register(index,type,action);
                      // replace match with index
                      line = line.replace(match[0], `<span id="${index}">${_expr}</span>`);
                   }
@@ -538,7 +515,7 @@ let parser = {
 
 }
 
-let reflector = {
+let __reflector = {
 
    __setupReflect: function() {
       // for each watcher
@@ -607,9 +584,9 @@ let reflector = {
 
                            // If the action is expecting to use the loop index key
                            if (loop_index_req == true) {
-                              watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']', true, loopIndexRegex, loop_index);
+                              __watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']', true, loopIndexRegex, loop_index);
                            } else {
-                              watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
+                              __watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
                            }
 
                            // loop indexes being expected are to be considered here too, they must have been interpolated
@@ -633,7 +610,7 @@ let reflector = {
                // console.log(action);
                // action = `for (let ${needle} in ${haystack}) { let cnt = \`${watcher.content}\`; cnt = cnt.replace(${needleRegex}, ${Object.assign({}, needle)}); document.getElementById('${watcher.index}').innerHTML += cnt }`;
                // console.log("loop", action);
-               evaluator.__execute(action);
+               __evaluator.__execute(action);
             }
 
             // loop dependent conditions
@@ -658,7 +635,7 @@ let reflector = {
                   action = action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
                   // console.log(action);
                   // evaluate the new action
-                  evaluator.__execute(action);
+                  __evaluator.__execute(action);
                });
             }
 
@@ -668,7 +645,7 @@ let reflector = {
                // html coverts > to &gt; and < to &lt;
                // so let's reverse it
                let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
-               evaluator.__execute(action);
+               __evaluator.__execute(action);
             }
 
             // loop dependent expressions
@@ -695,7 +672,7 @@ let reflector = {
                   }
                   // console.log(action);
                   // evaluate the new action
-                  evaluator.__execute(action);
+                  __evaluator.__execute(action);
                });
                // loop_index_stack.pop();
             }
@@ -704,7 +681,7 @@ let reflector = {
             if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
                // console.log("expr", watcher.action);
                // console.log(watcher.action);
-               evaluator.__execute(watcher.action);
+               __evaluator.__execute(watcher.action);
             }
 
          }
@@ -775,9 +752,9 @@ let reflector = {
 
                      // If the action is expecting to use the loop index key
                      if (loop_index_req == true) {
-                        watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']', true, loopIndexRegex, loop_index);
+                        __watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']', true, loopIndexRegex, loop_index);
                      } else {
-                        watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
+                        __watcher.__registerLoopWatcher(index, newIndex, re, '${haystack}'+'['+count+']');
                      }
 
                      // loop indexes being expected are to be considered here too, they must have been interpolated
@@ -801,7 +778,15 @@ let reflector = {
          // console.log(action);
          // action = `for (let ${needle} in ${haystack}) { let cnt = \`${watcher.content}\`; cnt = cnt.replace(${needleRegex}, ${Object.assign({}, needle)}); document.getElementById('${watcher.index}').innerHTML += cnt }`;
          // console.log("loop", action);
-         evaluator.__execute(action);
+
+         __evaluator.__execute(action);
+
+         // if the loop has children
+         if (_watchers[watcher.index].children != []) {
+            // loop through them
+            let children = _watchers[watcher.index].children;
+            __spy.__trigger(children);
+         }
       }
 
       // loop dependent conditions
@@ -826,7 +811,7 @@ let reflector = {
             action = action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
             // console.log(action);
             // evaluate the new action
-            evaluator.__execute(action);
+            __evaluator.__execute(action);
          });
       }
 
@@ -836,7 +821,7 @@ let reflector = {
          // html coverts > to &gt; and < to &lt;
          // so let's reverse it
          let action = watcher.action.replace(/&gt;*/gi, ">").replace(/&lt;*/gi, "<");
-         evaluator.__execute(action);
+         __evaluator.__execute(action);
       }
 
       // loop dependent expressions
@@ -863,7 +848,7 @@ let reflector = {
             }
             // console.log(action);
             // evaluate the new action
-            evaluator.__execute(action);
+            __evaluator.__execute(action);
          });
          // loop_index_stack.pop();
       }
@@ -872,26 +857,22 @@ let reflector = {
       if (watcher.type == "expr-tag" || watcher.type == "expr-attr") {
          // console.log("expr", watcher.action);
          // console.log(watcher.action);
-         evaluator.__execute(watcher.action);
+         __evaluator.__execute(watcher.action);
       }
 
    }
 
 }
 
-let evaluator = {
+let __evaluator = {
 
    __execute: function(action) {
       return Function('"use strict";' + action + ';')();
    },
 
-   __reexecute: function(action, dependence) {
-
-   }
-
 }
 
-let generator = {
+let __generator = {
 
    __hash: function() {
       let hex = "0123456789abcdef", hash = "";
@@ -904,15 +885,15 @@ let generator = {
 
 }
 
-let _spy_variables = [];
-
-let spy = {
+let __spy = {
 
    // find changes
    __store: function() {
-      let _var = {};
+      const _var = {};
       _variables.forEach(variable => {
-         _var[variable] = evaluator.__execute(`return ${variable};`);
+         let value = __evaluator.__execute(`return ${variable};`);
+         // Stringify the value, so that it doesn't change as variables changes
+         _var[variable] = JSON.stringify(value);
       });
 
       _spy_variables.push(_var);
@@ -920,6 +901,7 @@ let spy = {
    },
 
    __compare: function() {
+      console.log("comapring states...");
 
       // compare the current state and the previous
       let current = _spy_variables[_spy_variables.length - 1];
@@ -927,10 +909,14 @@ let spy = {
 
       _variables.forEach(variable => {
          
+         // here, the stringified version of the variables are been compared
          if (prev[variable] != current[variable]) {
             // this variable changed
             // get its watchers
+            console.log(variable + " changed");
             let watchers = _variable_watchers[variable];
+
+            console.log(watchers);
 
             // trigger its watchers
             this.__trigger(watchers);
@@ -946,9 +932,17 @@ let spy = {
 
       // trigger the reflector on these watchers
       watchers.forEach(watcher => {
-         reflector.__reflect(watcher);
+         __reflector.__reflect(watcher);
       });
 
    }
 
 }
+
+let _                   = mirror;
+let _spy_variables      = [];
+let _bodyStates         = [];
+let _variable_watchers  = {};
+let _watchers           = {};
+let _variables          = [];
+let _loop_watchers      = {};
